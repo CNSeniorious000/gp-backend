@@ -1,8 +1,13 @@
-from fastapi import FastAPI
 from starlette.templating import Jinja2Templates
+from starlette.responses import RedirectResponse
+from brotli_asgi import BrotliMiddleware
 from starlette.requests import Request
+from fastapi import FastAPI
+from os import system
 
-app = FastAPI()
+app = FastAPI(title="Guard Pine")
+
+app.add_middleware(BrotliMiddleware, quality=11, minimum_size=256)
 
 count = 0
 
@@ -20,3 +25,10 @@ async def root(request: Request):
             "count": count,
         }
     )
+
+
+@app.get("/refresh")
+def git_pull():
+    """trigger a git pull command in the terminal"""
+    system("git pull")
+    return RedirectResponse("/")
