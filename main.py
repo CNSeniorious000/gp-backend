@@ -2,12 +2,13 @@ from starlette.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 from brotli_asgi import BrotliMiddleware
 from starlette.requests import Request
+from user import router as user_router
 from fastapi import FastAPI
 from os import system
 
 app = FastAPI(title="Guard Pine")
-
 app.add_middleware(BrotliMiddleware, quality=11, minimum_size=256)
+app.include_router(user_router)
 
 count = 0
 
