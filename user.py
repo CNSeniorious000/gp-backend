@@ -1,12 +1,14 @@
+from secret import pool, app_id as ak, app_secret as sk
+from starlette.responses import PlainTextResponse
+from starlette.exceptions import HTTPException
 from fastapi.responses import ORJSONResponse
-from cachetools.func import ttl_cache
 from pydantic import BaseModel
 from fastapi import APIRouter
 from httpx import AsyncClient
 from functools import cache
 from hashlib import md5
 from redis import Redis
-from secret import pool, app_id as ak, app_secret as sk
+import jwt
 
 router = APIRouter()
 client = AsyncClient(http2=True)
@@ -26,6 +28,11 @@ async def get_openid(code: str):
         if openid is not None:
             ids.set(code, openid, 120)
         return openid
+
+
+@router.get("/test_md5")
+async def get_hash_string(string: str):
+    return md5(string.encode()).digest()
 
 
 class User:
@@ -56,6 +63,14 @@ class User:
     email = field("e")
     tel = field("t")
 
+    def set_password(self, pwd: str):
+        self.pwd_hash = get_hash_string(pwd)
+
+    def check_password(self, pwd: str):
+        return self.pwd_hash == get_hash_string(pwd)
+
+    pwd = property(fset=set_password)
+
 
 class NewUser(BaseModel):
     code: str
@@ -73,7 +88,7 @@ class VerifyUser(BaseModel):
 async def new_user(userinfo: NewUser):
     user = User(await get_openid(userinfo.code))
     if userinfo.pwd is not None:
-        user.pwd_hash = md5(userinfo.pwd).digest()
+        user.pwd = userinfo.pwd
 
     if userinfo.email is not None:
         user.email = userinfo.email
@@ -91,4 +106,19 @@ async def show_user(code: str):
 @router.post("/login")
 async def check_pwd(userinfo: VerifyUser):
     user = User(await get_openid(userinfo.code))
-    return user.pwd_hash == md5(userinfo.pwd.encode()).digest()
+    if user.check_password(userinfo.pwd):
+        return PlainTextResponse(jwt.encode({1: 2}, sk, "HS256"))
+    else:
+        return PlainTextResponse(status_code=401)
+
+
+@router.get("/test_verify_jwt")
+async def decode(token: str):
+    try:
+        return ORJSONResponse(jwt.decode(token, sk, "HS256"))
+    except jwt.InvalidSignatureError:
+        return PlainTextResponse(status_code=403)
+    except jwt.DecodeError:
+        return PlainTextResponse(status_code=400)
+    except Exception as err:
+        raise HTTPException(500, f"{type(err).__name__}: {err.args[0]}")
