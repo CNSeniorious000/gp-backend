@@ -11,14 +11,20 @@ from secret import pool, app_id as ak, app_secret as sk
 router = APIRouter()
 client = AsyncClient(http2=True)
 users = Redis(connection_pool=pool, db=0)
+ids = Redis(connection_pool=pool, db=1)
 
 
 @router.get("/openid")
 async def get_openid(code: str):
-    return (await client.get(
-        "https://api.weixin.qq.com/sns/jscode2session", params=dict(
-            appid=ak, secret=sk, js_code=code, grant_type="authorization_code"
-        ))).json().get("openid", None)
+    try:
+        return ids[code]
+    except KeyError:
+        openid = (await client.get(
+            "https://api.weixin.qq.com/sns/jscode2session", params=dict(
+                appid=ak, secret=sk, js_code=code, grant_type="authorization_code"
+            ))).json().get("openid", None)
+        ids.set(code, openid, 120)
+        return openid
 
 
 class User:
