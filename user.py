@@ -30,8 +30,12 @@ async def get_openid(code: str):
         return openid
 
 
-@router.get("/test_md5")
-async def get_hash_string(string: str):
+@router.get("/test_md5", response_class=PlainTextResponse)
+async def get_md5_hash(string: str):
+    return md5(string.encode()).hexdigest()
+
+
+def get_hash_string(string: str):
     return md5(string.encode()).digest()
 
 
