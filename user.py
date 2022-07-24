@@ -23,7 +23,8 @@ async def get_openid(code: str):
             "https://api.weixin.qq.com/sns/jscode2session", params=dict(
                 appid=ak, secret=sk, js_code=code, grant_type="authorization_code"
             ))).json().get("openid", None)
-        ids.set(code, openid, 120)
+        if openid is not None:
+            ids.set(code, openid, 120)
         return openid
 
 
