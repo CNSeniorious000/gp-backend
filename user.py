@@ -41,31 +41,31 @@ def get_hash_string(string: str):
 
 class User:
     @cache
-    def __new__(cls, openid):
+    def __new__(cls, id):
         return super().__new__(cls)
 
-    def __init__(self, openid):
-        self.openid = openid
+    def __init__(self, id):
+        self.id = id
 
     def __repr__(self):
-        return f"User(openid={self.openid})"
+        return f"User({self.id})"
 
     @staticmethod
-    def field(key):
+    def simple_field(key):
         def getter(self: "User"):
-            return users.hget(self.openid, key)
+            return users.hget(self.id, key)
 
         def setter(self: "User", value):
-            users.hset(self.openid, key, value)
+            users.hset(self.id, key, value)
 
         def deleter(self: "User"):
-            users.hdel(self.openid, key)
+            users.hdel(self.id, key)
 
         return property(getter, setter, deleter)
 
-    pwd_hash = field("p")
-    email = field("e")
-    tel = field("t")
+    pwd_hash = simple_field("p")
+    email = simple_field("e")
+    tel = simple_field("t")
 
     def set_password(self, pwd: str):
         self.pwd_hash = get_hash_string(pwd)
@@ -75,8 +75,22 @@ class User:
 
     pwd = property(fset=set_password)
 
+    @property
+    def profile(self):
+        return {
+            "email": self.email,
+            "tel": self.tel
+        }
+
 
 class NewUser(BaseModel):
+    id: str
+    pwd: str | None
+    email: str | None
+    tel: str | None
+
+
+class NewUserFromCode(BaseModel):
     code: str
     pwd: str | None
     email: str | None
@@ -84,12 +98,30 @@ class NewUser(BaseModel):
 
 
 class VerifyUser(BaseModel):
+    id: str
+    pwd: str
+
+
+class VerifyUserFromCode(BaseModel):
     code: str
     pwd: str
 
 
-@router.put("/user")
+@router.put("/test_id2user")
 async def new_user(userinfo: NewUser):
+    user = User(userinfo.id)
+    if userinfo.pwd is not None:
+        user.pwd = userinfo.pwd
+
+    if userinfo.email is not None:
+        user.email = userinfo.email
+
+    if userinfo.tel is not None:
+        user.tel = userinfo.tel
+
+
+@router.put("/user")
+async def new_user_from_code(userinfo: NewUserFromCode):
     user = User(await get_openid(userinfo.code))
     if userinfo.pwd is not None:
         user.pwd = userinfo.pwd
@@ -101,14 +133,30 @@ async def new_user(userinfo: NewUser):
         user.tel = userinfo.tel
 
 
-@router.get("/user")
-async def show_user(code: str):
-    user = User(await get_openid(code))
-    return ORJSONResponse({"tel": user.tel, "email": user.email})
+@router.get("/id2user", response_class=ORJSONResponse)
+async def get_user(id: str):
+    if id in users:
+        return User(id).profile
+    else:
+        return HTTPException(404, f"not user's id is {id}")
+
+
+@router.get("/user", response_class=ORJSONResponse)
+async def get_user_from_code(code: str):
+    return await get_user(await get_openid(code))
+
+
+@router.post("/id2login")
+async def check_pwd(userinfo: VerifyUser):
+    user = User(userinfo.id)
+    if user.check_password(userinfo.pwd):
+        return PlainTextResponse(jwt.encode({1: 2}, sk, "HS256"))
+    else:
+        return PlainTextResponse(status_code=401)
 
 
 @router.post("/login")
-async def check_pwd(userinfo: VerifyUser):
+async def check_pwd_from_code(userinfo: VerifyUserFromCode):
     user = User(await get_openid(userinfo.code))
     if user.check_password(userinfo.pwd):
         return PlainTextResponse(jwt.encode({1: 2}, sk, "HS256"))
