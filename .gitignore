@@ -1,4 +1,4 @@
 __pycache__
 .idea
 .vscode
-secret.py
+common/secret.py

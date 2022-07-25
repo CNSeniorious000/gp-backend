@@ -1,4 +1,4 @@
-from secret import pool, app_id as ak, app_secret as sk
+from ..common.secret import pool, app_id as ak, app_secret as sk
 from starlette.responses import PlainTextResponse
 from starlette.exceptions import HTTPException
 from fastapi.responses import ORJSONResponse

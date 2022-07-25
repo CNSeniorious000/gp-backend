@@ -12,7 +12,7 @@ app.include_router(user_router)
 
 count = 0
 
-templates = Jinja2Templates(".")
+templates = Jinja2Templates("static")
 
 
 @app.get("/")
