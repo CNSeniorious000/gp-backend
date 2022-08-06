@@ -1,4 +1,5 @@
 from .impl import *
+from .wechat import *
 
 
 @router.get("/test_md5", response_class=PlainTextResponse)
@@ -16,3 +17,6 @@ async def decode(token: str):
         return PlainTextResponse(status_code=400)
     except Exception as err:
         raise HTTPException(500, f"{type(err).__name__}: {err.args[0]}")
+
+
+__all__ = {"router"}

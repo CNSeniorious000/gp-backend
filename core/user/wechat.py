@@ -1,19 +1,20 @@
+from ..common.secret import app_id as ak
 from .impl import *
 
-openids = Redis(connection_pool=pool, db=1)
+openid_cache = Redis(connection_pool=pool, db=1)
 
 
 @router.get("/openid")
 async def get_openid(code: str):
     try:
-        return openids[code]
+        return openid_cache[code]
     except KeyError:
         openid = (await client.get(
             "https://api.weixin.qq.com/sns/jscode2session", params=dict(
                 appid=ak, secret=sk, js_code=code, grant_type="authorization_code"
             ))).json().get("openid", None)
         if openid is not None:
-            openids.set(code, openid, 120)
+            openid_cache.set(code, openid, 120)
         return openid
 
 
