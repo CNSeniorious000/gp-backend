@@ -12,4 +12,4 @@
 ### 微信直接登录
 
 - id 为 `openid`
-- pwd 为 `openid`
+- pwd 为 `SK` + `openid`

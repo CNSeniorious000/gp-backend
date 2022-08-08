@@ -1,4 +1,4 @@
-from functools import cache, cached_property, lru_cache
+from functools import cached_property, lru_cache
 from sqlmodel import SQLModel, Field, Session, select
 from ..common.secret import app_secret as sk, pool
 from starlette.responses import PlainTextResponse
@@ -101,8 +101,8 @@ class User:
 
 
 class UserForm(BaseModel):
-    id: str
-    pwd: str | None
+    id: str = "string"
+    pwd: str = "string"
 
 
 @router.get("/user")
@@ -111,7 +111,7 @@ def exist(id: str):
 
 
 @router.put("/user")
-async def new_user(form: UserForm):
+async def register(form: UserForm):
     if exist(form.id):
         raise HTTPException(403, f"user {form.id} already exists")
 
@@ -123,7 +123,7 @@ async def new_user(form: UserForm):
         session.commit()
         session.refresh(user)  # maybe redundant
 
-    return user
+    return exist(form.id)
 
 
 @router.post("/user")

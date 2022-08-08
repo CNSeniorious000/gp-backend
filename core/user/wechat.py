@@ -37,40 +37,22 @@ async def get_openid(code: str):
                     raise HTTPException(500, "微信接口繁忙，此时请开发者稍候再试")
 
 
-class NewUserFromCode(BaseModel):
+class WeChatForm(BaseModel):
     code: str
-    pwd: str | None
-    email: str | None
-    tel: str | None
+
+
+@router.get("/wechat/user")
+async def wechat_exist(code: str):
+    return exist(await get_openid(code))
 
 
 @router.put("/wechat/user")
-async def new_user_from_code(userinfo: NewUserFromCode):
-    user = User(await get_openid(userinfo.code))
-    if userinfo.pwd is not None:
-        user.pwd = userinfo.pwd
-
-    if userinfo.email is not None:
-        user.email = userinfo.email
-
-    if userinfo.tel is not None:
-        user.tel = userinfo.tel
-
-
-class VerifyUserFromCode(BaseModel):
-    code: str
-    pwd: str
+async def wechat_register(form: WeChatForm):
+    id = await get_openid(form.code)
+    return await register(UserForm(id=id, pwd=sk + id))
 
 
 @router.post("/wechat/user")
-async def login_from_code(userinfo: VerifyUserFromCode):
-    user = User(await get_openid(userinfo.code))
-    if user.check_password(userinfo.pwd):
-        return PlainTextResponse(jwt.encode({1: 2}, sk, "HS256"))
-    else:
-        return PlainTextResponse(status_code=401)
-
-
-@router.get("/wechat/user", response_class=ORJSONResponse)
-async def get_user_from_code(code: str):
-    return await show_profile(await get_openid(code))
+async def wechat_login(form: WeChatForm):
+    id = await get_openid(form.code)
+    return await login(UserForm(id=id, pwd=sk + id))
