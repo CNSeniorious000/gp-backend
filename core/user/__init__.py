@@ -19,4 +19,4 @@ async def decode(token: str):
         raise HTTPException(500, f"{type(err).__name__}: {err.args[0]}")
 
 
-__all__ = {"router"}
+__all__ = ["router"]
