@@ -90,7 +90,7 @@ class User:
     @cached_property
     def item(self):
         with Session(engine) as session:
-            return session.exec(select(UserItem).where(UserItem.id == self.id)).one_or_none()
+            return session.exec(select(UserItem).where(UserItem.id == self.id)).one()
 
     def __repr__(self):
         return f"User({self.id})"
