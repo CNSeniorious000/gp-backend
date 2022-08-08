@@ -2,8 +2,7 @@ from functools import cached_property, lru_cache
 from sqlmodel import SQLModel, Field, Session, select
 from ..common.secret import app_secret as sk, pool
 from starlette.responses import PlainTextResponse
-from starlette.exceptions import HTTPException
-from fastapi.responses import ORJSONResponse
+from sqlalchemy.exc import NoResultFound
 from ujson import dumps, loads
 from pydantic import BaseModel
 from fastapi import APIRouter
@@ -107,13 +106,16 @@ class UserForm(BaseModel):
 
 @router.get("/user")
 def exist(id: str):
-    return not not User(id).item
+    try:
+        return User(id).item.id == id
+    except NoResultFound:
+        return False
 
 
 @router.put("/user")
 async def register(form: UserForm):
     if exist(form.id):
-        raise HTTPException(403, f"user {form.id} already exists")
+        return PlainTextResponse(f"user {form.id} already exists", 403)
 
     with Session(engine) as session:
         user = UserItem()
