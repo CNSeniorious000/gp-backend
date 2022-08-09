@@ -16,7 +16,7 @@ templates = Jinja2Templates("static")
 
 
 @app.get("/")
-async def root(request: Request):
+async def index_page(request: Request):
     global count
     count += 1
     return templates.TemplateResponse(
