@@ -26,8 +26,8 @@ def md5_hash(string: str) -> bytes:
 
 class UserItem(SQLModel, table=True):
     __tablename__ = "users"
-    id: str = Field(default="string", primary_key=True)
-    pwd_hash: bytes = Field(default=md5_hash("string"))
+    id: str = Field(nullable=False, primary_key=True)
+    pwd_hash: bytes
     meta: str = "{}"
 
 
@@ -100,8 +100,8 @@ class User:
 
 
 class UserForm(BaseModel):
-    id: str = "string"
-    pwd: str = "string"
+    id: str
+    pwd: str
 
 
 @router.get("/user")
