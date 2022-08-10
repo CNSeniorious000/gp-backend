@@ -3,7 +3,6 @@ from ..common.secret import app_secret as sk, pool
 from starlette.responses import PlainTextResponse
 from functools import cached_property, lru_cache
 from sqlalchemy.exc import NoResultFound
-from starlette.requests import Request
 from ujson import dumps, loads
 from pydantic import BaseModel
 from fastapi import APIRouter
@@ -151,5 +150,14 @@ async def login(form: UserForm):
 
 @router.patch("/user")
 async def reset_pwd(form: ResetPwdForm):
-    id = jwt.decode(form.token, sk, "HS256")["id"]  # ensure valid
+    try:
+        id = jwt.decode(form.token, sk, "HS256")["id"]  # ensure valid
+    except jwt.InvalidSignatureError as err:
+        return PlainTextResponse(f"{type(err).__qualname__}: {str(err)}", 403)  # hacking?
+    except jwt.DecodeError as err:
+        return PlainTextResponse(f"{type(err).__qualname__}: {str(err)}", 400)  # just playing
+    except (TypeError, KeyError):
+        import traceback
+        return PlainTextResponse(traceback.format_exc(chain=False), 500)  # maybe wrong jwt or wrong head
+
     User(id).pwd = form.new_pwd
