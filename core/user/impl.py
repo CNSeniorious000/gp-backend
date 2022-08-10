@@ -1,8 +1,9 @@
-from functools import cached_property, lru_cache
 from sqlmodel import SQLModel, Field, Session, select
 from ..common.secret import app_secret as sk, pool
 from starlette.responses import PlainTextResponse
+from functools import cached_property, lru_cache
 from sqlalchemy.exc import NoResultFound
+from starlette.requests import Request
 from ujson import dumps, loads
 from pydantic import BaseModel
 from fastapi import APIRouter
@@ -104,6 +105,11 @@ class UserForm(BaseModel):
     pwd: str
 
 
+class ResetPwdForm(BaseModel):
+    token: str
+    new_pwd: str
+
+
 @router.get("/user")
 def exist(id: str):
     try:
@@ -144,6 +150,6 @@ async def login(form: UserForm):
 
 
 @router.patch("/user")
-async def reset_pwd(token: str, new_pwd: str):
-    id = jwt.decode(token, sk, "HS256")["id"]  # ensure valid
-    User(id).pwd = new_pwd
+async def reset_pwd(form: ResetPwdForm):
+    id = jwt.decode(form.token, sk, "HS256")["id"]  # ensure valid
+    User(id).pwd = form.new_pwd
