@@ -2,3 +2,4 @@ __pycache__
 .idea
 .vscode
 core/common/secret.py
+assets
