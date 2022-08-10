@@ -130,6 +130,9 @@ async def register(form: UserForm):
 
 @router.post("/user")
 async def login(form: UserForm):
+    if not exist(form.id):
+        return PlainTextResponse(f"user {form.id} doesn't exist", 404)
+
     user = User(form.id)
     if user.pwd == form.pwd:
         return PlainTextResponse(jwt.encode(
