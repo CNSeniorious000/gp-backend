@@ -1,3 +1,4 @@
+from starlette.exceptions import HTTPException
 from ..common.secret import app_id as ak
 from .impl import *
 
