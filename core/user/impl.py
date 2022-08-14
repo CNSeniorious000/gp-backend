@@ -2,6 +2,7 @@ from sqlmodel import SQLModel, Field, Session, select
 from ..common.secret import app_secret as sk, pool
 from starlette.responses import PlainTextResponse
 from functools import cached_property, lru_cache
+from fastapi.responses import ORJSONResponse
 from sqlalchemy.exc import NoResultFound
 from ujson import dumps, loads
 from pydantic import BaseModel
@@ -130,7 +131,7 @@ async def register(form: UserForm):
         session.commit()
         session.refresh(user)  # maybe redundant
 
-    return exist(form.id)
+    return ORJSONResponse({"hex": User(form.id).pwd.pwd_hash.hex()}, 201)
 
 
 @router.post("/user")
@@ -161,3 +162,4 @@ async def reset_pwd(form: ResetPwdForm):
         return PlainTextResponse(traceback.format_exc(chain=False), 500)  # maybe wrong jwt or wrong head
 
     User(id).pwd = form.new_pwd
+    return ORJSONResponse({"hex": repr(User(id).pwd.pwd_hash.hex())}, 201)
