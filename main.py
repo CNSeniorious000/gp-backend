@@ -41,7 +41,7 @@ client = AsyncClient(http2=True)
 
 
 async def get_iframe(url, title=None) -> bytes:
-    return (await client.get("http://localhost:7777/link", params={"url": url, "title": title})).content
+    return (await client.get("http://localhost/link", params={"url": url, "title": title})).content
 
 
 @app.get("/notes", response_class=HTMLResponse)
