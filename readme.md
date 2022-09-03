@@ -1,4 +1,8 @@
+[![logo](https://gp.muspimerol.site/favicon.svg)](https://gp.muspimerol.site/)
+
 # 守护青松 Guard Pine
+
+![jwt compatible](http://jwt.io/img/badge-compatible.svg)
 
 ## 接口上新计划
 
