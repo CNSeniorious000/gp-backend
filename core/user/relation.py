@@ -1,4 +1,5 @@
-from ..common.auth import parse_id
+from ..userdata.favorite import get_favorites
+from ..userdata.activity import get_activities
 from .impl import *
 
 router = APIRouter(tags=["relation"])

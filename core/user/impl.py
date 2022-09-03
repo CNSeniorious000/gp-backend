@@ -1,14 +1,17 @@
-from sqlmodel import SQLModel, Field, Session, select
+from sqlmodel import SQLModel, Field, Session, select, or_
 from ..common.secret import app_secret as sk, pool
 from starlette.responses import PlainTextResponse
 from functools import cached_property, lru_cache
 from fastapi.responses import ORJSONResponse
 from sqlalchemy.exc import NoResultFound
+from ..common.auth import parse_id
 from ujson import dumps, loads
 from pydantic import BaseModel
 from fastapi import APIRouter
 from httpx import AsyncClient
+from itertools import chain
 from ..common.sql import *
+from asyncio import sleep
 from hashlib import md5
 from redis import Redis
 from time import time
@@ -162,3 +165,32 @@ async def reset_pwd(form: ResetPwdForm):
 
     User(id).pwd = form.new_pwd
     return ORJSONResponse({"hex": repr(User(id).pwd.pwd_hash.hex())}, 201)
+
+
+@router.delete("/user")
+async def erase(token: str):
+    id = parse_id(token)
+    if not exist(id):
+        return PlainTextResponse(f"user {id} doesn't exist", 404)
+
+    from .relation import RelationItem
+    from ..userdata.favorite import FavoriteItem
+    from ..userdata.activity import ActivityItem, Activity
+
+    with Session(engine) as session:
+        for item in chain(
+                session.exec(select(RelationItem).where(or_(
+                    RelationItem.from_user_id == id, RelationItem.to_user_id == id
+                ))),
+                session.exec(select(FavoriteItem).where(FavoriteItem.user_id == id)),
+                session.exec(select(ActivityItem).where(ActivityItem.user_id == id))
+        ):
+            session.delete(item)
+        session.commit()
+        session.delete(User(id).item)
+        session.commit()
+
+    User.__new__.cache_clear()
+    Activity.__new__.cache_clear()
+
+    return not exist(id)

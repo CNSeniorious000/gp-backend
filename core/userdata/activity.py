@@ -115,3 +115,5 @@ def remove_activity(token: str, id: str):
             session.commit()
         else:
             raise HTTPException(401, f"activity {id} does not belongs to {user_id}")
+
+    Activity.__new__.cache_clear()
