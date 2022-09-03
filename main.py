@@ -1,3 +1,4 @@
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html
 from starlette.responses import RedirectResponse, HTMLResponse
 from core.common.sql import create_db_and_tables
 from starlette.templating import Jinja2Templates
@@ -13,7 +14,7 @@ from fastapi import FastAPI
 from os import system
 
 create_db_and_tables()
-app = FastAPI(title="守护青松 Guard Pine", version="0.2.0",
+app = FastAPI(title="守护青松 Guard Pine", version="0.2.1",
               license_info={"name": "MIT License", "url": "https://mit-license.org/"},
               contact={"name": "Muspi Merol", "url": "https://muspimerol.site/", "email": "admin@muspimerol.site"},
               openapi_tags=[
@@ -25,7 +26,7 @@ app = FastAPI(title="守护青松 Guard Pine", version="0.2.0",
               ],
               # description=open("./readme.md", encoding="utf-8").read(),
               description="### “守护青松”国家级大创项目 [部署地址](https://muspimerol.site:9999/)",
-              default_response_class=ORJSONResponse)
+              docs_url=None, redoc_url=None, default_response_class=ORJSONResponse)
 app.add_middleware(BrotliMiddleware, quality=11, minimum_size=256)
 
 count = 0
@@ -68,6 +69,25 @@ async def get_notes():
 @app.get("/apifox", response_class=HTMLResponse, include_in_schema=False)
 async def get_apidoc():
     return await get_iframe("https://www.apifox.cn/apidoc/project-1338127", "守护青松 - 接口文档")
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - Swagger UI",
+        swagger_js_url="/static/swagger-ui-bundle.js",
+        swagger_css_url="/static/swagger-ui.css",
+    )
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    return get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - ReDoc",
+        redoc_js_url="/static/redoc.standalone.js",
+    )
 
 
 app.include_router(dev_router)

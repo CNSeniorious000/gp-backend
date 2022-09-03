@@ -1,6 +1,6 @@
 [![logo](/static/favicon.svg)](https://gp.muspimerol.site/)
 
-# 守护青松 Guard Pine `v0.2.0`
+# 守护青松 Guard Pine `v0.2.1`
 
 ![jwt compatible](http://jwt.io/img/badge-compatible.svg)
 
