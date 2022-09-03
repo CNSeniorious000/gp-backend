@@ -14,8 +14,7 @@ from redis import Redis
 from time import time
 import jwt
 
-router = APIRouter()
-router.on_startup.append(create_db_and_tables)
+router = APIRouter(tags=["user"])
 
 client = AsyncClient(http2=True)
 openid_cache = Redis(connection_pool=pool, db=1)
@@ -72,7 +71,7 @@ class User:
         self.id = id
 
     def __getitem__(self, key):
-        return self.meta[key]
+        return self.meta.get(key)
 
     def __setitem__(self, key, val):
         self.meta[key] = val
@@ -84,7 +83,7 @@ class User:
             session.refresh(self.item)  # maybe redundant
 
     @cached_property
-    def meta(self):
+    def meta(self) -> dict:
         return loads(self.item.meta)
 
     @cached_property

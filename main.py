@@ -1,23 +1,39 @@
 from starlette.responses import RedirectResponse, HTMLResponse
+from core.common.sql import create_db_and_tables
 from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
-from core.user import router as user_router
+from core.userdata import activity, favorite
+from fastapi.responses import ORJSONResponse
+from core.user import router, dev_router
 from brotli_asgi import BrotliMiddleware
 from starlette.requests import Request
+from core.user import relation
 from httpx import AsyncClient
 from fastapi import FastAPI
 from os import system
 
-app = FastAPI(title="守护青松 Guard Pine")
+create_db_and_tables()
+app = FastAPI(title="守护青松 Guard Pine", version="0.2.0",
+              license_info={"name": "MIT License", "url": "https://mit-license.org/"},
+              contact={"name": "Muspi Merol", "url": "https://muspimerol.site/", "email": "admin@muspimerol.site"},
+              openapi_tags=[
+                  {"name": "dev", "description": "Develop tools, **will be removed in the future.**"},
+                  {"name": "user", "description": "**User login** and more."},
+                  {"name": "activity", "description": "活动增删查改"},
+                  {"name": "favorite", "description": "收藏增删查改"},
+                  {"name": "relation", "description": "关系增删查改"},
+              ],
+              # description=open("./readme.md", encoding="utf-8").read(),
+              description="### “守护青松”国家级大创项目 [部署地址](https://muspimerol.site:9999/)",
+              default_response_class=ORJSONResponse)
 app.add_middleware(BrotliMiddleware, quality=11, minimum_size=256)
-app.include_router(user_router)
 
 count = 0
 
 templates = Jinja2Templates("static")
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 async def index_page(request: Request):
     global count
     count += 1
@@ -30,7 +46,7 @@ async def index_page(request: Request):
     )
 
 
-@app.get("/refresh")
+@dev_router.get("/refresh")
 def git_pull():
     """trigger a git pull command in local terminal and redirect to document page"""
     system("git pull")
@@ -44,15 +60,20 @@ async def get_iframe(url, title=None) -> bytes:
     return (await client.get("http://localhost/link", params={"url": url, "title": title})).content
 
 
-@app.get("/notes", response_class=HTMLResponse)
+@app.get("/notes", response_class=HTMLResponse, include_in_schema=False)
 async def get_notes():
     return await get_iframe("https://www.craft.do/s/bbKnMXuNDudwop", "守护青松 - 开发者说")
 
 
-@app.get("/apifox", response_class=HTMLResponse)
+@app.get("/apifox", response_class=HTMLResponse, include_in_schema=False)
 async def get_apidoc():
     return await get_iframe("https://www.apifox.cn/apidoc/project-1338127", "守护青松 - 接口文档")
 
 
+app.include_router(dev_router)
+app.include_router(router)
+app.include_router(relation.router)
+app.include_router(activity.router)
+app.include_router(favorite.router)
 app.mount("/static", StaticFiles(directory="static"))
 app.mount("/", StaticFiles(directory="static"))
