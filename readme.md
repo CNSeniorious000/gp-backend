@@ -1,12 +1,12 @@
-[![logo](https://gp.muspimerol.site/favicon.svg)](https://gp.muspimerol.site/)
+[![logo](/static/favicon.svg)](https://gp.muspimerol.site/)
 
-# 守护青松 Guard Pine
+# 守护青松 Guard Pine `v0.2.0`
 
 ![jwt compatible](http://jwt.io/img/badge-compatible.svg)
 
 ## 接口上新计划
 
-- [ ] 亲人信息
+- [x] 亲人信息
 
   ```json
   [
@@ -25,6 +25,7 @@
       ],
       "favorites": [
         {
+          "id": "收藏标识码",
           "title": "内容标题",
           "abstract": "内容摘要",
           "timeStamp": "时间戳",
