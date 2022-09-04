@@ -128,7 +128,6 @@ class FavoriteForm(BaseModel):
 def add_favorite(form: FavoriteForm):
     user_id = parse_id(form.token)
     with Session(engine) as session:
-        print(f"{form.timeStamp = }")
         session.add(FavoriteItem(user_id=user_id, url=form.url, timeStamp=form.timeStamp))
         session.commit()
 
