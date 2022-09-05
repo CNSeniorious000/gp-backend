@@ -8,6 +8,7 @@ from fastapi.responses import ORJSONResponse
 from core.user import router, dev_router
 from brotli_asgi import BrotliMiddleware
 from starlette.requests import Request
+from core.common.secret import host
 from core.user import relation
 from httpx import AsyncClient
 from fastapi import FastAPI
@@ -58,7 +59,8 @@ client = AsyncClient(http2=True)
 
 
 async def get_iframe(url, title=None) -> bytes:
-    return (await client.get("http://localhost/link", params={"url": url, "title": title})).content
+    # noinspection HttpUrlsUsage
+    return (await client.get(f"http://{host}/link", params={"url": url, "title": title})).content
 
 
 @app.get("/notes", response_class=HTMLResponse, include_in_schema=False)
