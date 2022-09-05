@@ -47,7 +47,7 @@ async def wechat_exist(code: str):
     return exist(await get_openid(code))
 
 
-@router.put("/wechat/user")
+@router.put("/wechat/user", deprecated=True)
 async def wechat_register(form: WeChatForm):
     id = await get_openid(form.code)
     return await register(UserForm(id=id, pwd=sk + id))
@@ -56,4 +56,6 @@ async def wechat_register(form: WeChatForm):
 @router.post("/wechat/user")
 async def wechat_login(form: WeChatForm):
     id = await get_openid(form.code)
+    if not exist(id):
+        await register(UserForm(id=id, pwd=sk + id))
     return await login(UserForm(id=id, pwd=sk + id))
