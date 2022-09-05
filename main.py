@@ -72,7 +72,8 @@ async def get_apidoc():
 
 
 @app.get("/docs", include_in_schema=False)
-async def custom_swagger_ui_html():
+async def custom_swagger_ui_html(request: Request):
+    await request.send_push_promise("/openapi.json")
     return get_swagger_ui_html(
         openapi_url=app.openapi_url,
         title=app.title + " - Swagger UI",
@@ -82,7 +83,8 @@ async def custom_swagger_ui_html():
 
 
 @app.get("/redoc", include_in_schema=False)
-async def redoc_html():
+async def redoc_html(request: Request):
+    await request.send_push_promise("/openapi.json")
     return get_redoc_html(
         openapi_url=app.openapi_url,
         title=app.title + " - ReDoc",
