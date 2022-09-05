@@ -28,7 +28,7 @@ async def new_relationship(form: NewRelationForm):
 
 
 @router.get("/relationship")
-async def get_relationship(token: str, verbose: bool = True, pre_redirect: bool = False):
+async def get_relationship(token: str, verbose: bool = True):
     user = User(parse_id(token))
     results = []
     with Session(engine) as session:
@@ -40,7 +40,7 @@ async def get_relationship(token: str, verbose: bool = True, pre_redirect: bool 
                     "name": to["name"],
                     "avatar": to["avatar"],
                     "relation": item.relation,
-                    "favorites": await get_favorites(token, pre_redirect),
+                    "favorites": await get_favorites(token),
                     "activities": get_activities(token)
                 } if verbose else {
                     "name": to["name"], "avatar": to["avatar"], "relation": item.relation

@@ -1,32 +1,38 @@
 from sqlmodel import SQLModel, Field, select, Session
 from starlette.exceptions import HTTPException
-from httpx_cache import AsyncClient, FileCache
+from httpx import AsyncClient, ReadTimeout
 from functools import cached_property
 from ..common.auth import parse_id
 from urllib.parse import urljoin
 from ..common.sql import engine
 from pydantic import BaseModel
-from httpx import ReadTimeout
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
+from cachetools import TTLCache
 
 router = APIRouter(tags=["favorite"])
 
-client = AsyncClient(http2=True, follow_redirects=True, cache=FileCache("./httpx-cache"))
+client = AsyncClient(http2=True, follow_redirects=True)
+
+url_meta_cache = TTLCache(1234, 1234)
 
 
 @router.get("/parse")
-async def get_meta(url, pre_redirect=True):
+async def get_meta(url):
     """ # return title, description of a web page
     TODO:
     - [x] html
     - [ ] image
     - [ ] pdf
     """
+    if url in url_meta_cache:
+        return url_meta_cache[url]
+
     try:
         response = await client.get(url)
     except ReadTimeout as err:
-        return {"title": "ReadTimeout", "abstract": str(err)}
+        url_meta_cache[url] = result = {"title": "ReadTimeout", "abstract": str(err)}
+        return result
 
     html = BeautifulSoup(response.text, features="lxml")
     result = {}
@@ -56,11 +62,12 @@ async def get_meta(url, pre_redirect=True):
         result["image"] = urljoin(url, tag["href"])
 
     # shortcut
-    if pre_redirect:
-        if tag := html.find("meta", {"property": "og:url"}):
-            result["url"] = tag["content"]
-        elif str(response.url) != url:
-            result["url"] = str(response.url)
+    if tag := html.find("meta", {"property": "og:url"}):
+        result["redirected"] = tag["content"]
+    elif str(response.url) != url:
+        result["redirected"] = str(response.url)
+
+    url_meta_cache[url] = result
 
     return result
 
@@ -95,7 +102,7 @@ class Favorite:
     def time_stamp(self):
         return self.item.timeStamp
 
-    async def get_full_information(self, pre_redirect=True):
+    async def get_full_information(self):
         result = {
             "id": self.id,
             "url": self.url,
@@ -104,16 +111,16 @@ class Favorite:
             "abstract": None,
             "timeStamp": self.time_stamp
         }
-        result.update(await get_meta(self.url, pre_redirect=pre_redirect))
+        result.update(await get_meta(self.url))
         return result
 
 
 @router.get("/favorite")
-async def get_favorites(token: str, pre_redirect: bool = False):
+async def get_favorites(token: str):
     user_id = parse_id(token)
     with Session(engine) as session:
         return [
-            await Favorite(i.id).get_full_information(pre_redirect=pre_redirect)
+            await Favorite(i.id).get_full_information()
             for i in session.exec(select(FavoriteItem).where(FavoriteItem.user_id == user_id))
         ]
 
