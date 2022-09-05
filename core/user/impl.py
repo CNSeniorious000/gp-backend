@@ -194,3 +194,29 @@ async def erase(token: str):
     Activity.__new__.cache_clear()
 
     return not exist(id)
+
+
+@router.get("/avatar/{id}")
+async def get_avatar(id: str):
+    """获取用户头像"""
+    return User(id)["avatar"]
+
+
+@router.put("/avatar")
+async def set_avatar(token: str, url: str):
+    """设置用户头像"""
+    user = User(parse_id(token))
+    user["avatar"] = url
+
+
+@router.get("/name/{id}")
+async def get_name(id: str):
+    """获取用户昵称"""
+    return User(id)["name"]
+
+
+@router.put("/name")
+async def set_name(token: str, name: str):
+    """设置用户昵称"""
+    user = User(parse_id(token))
+    user["name"] = name
