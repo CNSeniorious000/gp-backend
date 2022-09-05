@@ -1,4 +1,4 @@
-from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from starlette.responses import RedirectResponse, HTMLResponse
 from core.common.sql import create_db_and_tables
 from starlette.templating import Jinja2Templates

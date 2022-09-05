@@ -79,7 +79,7 @@ class User:
     def __setitem__(self, key, val):
         self.meta[key] = val
         with Session(engine) as session:
-            self.item.meta = dumps(self.meta)
+            self.item.meta = dumps(self.meta, ensure_ascii=False)
             # del self.meta
             session.add(self.item)
             session.commit()
