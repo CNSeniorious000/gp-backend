@@ -1,6 +1,6 @@
-from httpx import AsyncClient, ReadTimeout, ConnectTimeout
 from sqlmodel import SQLModel, Field, select, Session
 from starlette.exceptions import HTTPException
+from httpx import AsyncClient, HTTPError
 from functools import cached_property
 from ..common.auth import parse_id
 from urllib.parse import urljoin
@@ -31,8 +31,8 @@ async def get_meta(url):
 
     try:
         response = await client.get(url)
-    except (ReadTimeout, ConnectTimeout) as err:
-        err: ReadTimeout | ConnectTimeout
+    except HTTPError as err:
+        err: HTTPError
         url_meta_cache[url] = result = {"title": err.__class__.__name__, "abstract": str(err)}
         return result
 
