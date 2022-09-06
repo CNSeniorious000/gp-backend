@@ -2,6 +2,7 @@ from sqlmodel import SQLModel, Field, Session, select, or_
 from ..common.secret import app_secret as sk, pool
 from starlette.responses import PlainTextResponse
 from functools import cached_property, lru_cache
+from starlette.exceptions import HTTPException
 from fastapi.responses import ORJSONResponse
 from sqlalchemy.exc import NoResultFound
 from ..common.auth import parse_id
@@ -11,7 +12,6 @@ from fastapi import APIRouter
 from httpx import AsyncClient
 from itertools import chain
 from ..common.sql import *
-from asyncio import sleep
 from hashlib import md5
 from redis import Redis
 from time import time
@@ -199,7 +199,10 @@ async def erase(token: str):
 @router.get("/avatar/{id}")
 async def get_avatar(id: str):
     """获取用户头像"""
-    return User(id)["avatar"]
+    try:
+        return User(id)["avatar"]
+    except NoResultFound:
+        raise HTTPException(404, f"{id} is not a valid user id")
 
 
 @router.put("/avatar")
@@ -212,7 +215,10 @@ async def set_avatar(token: str, url: str):
 @router.get("/name/{id}")
 async def get_name(id: str):
     """获取用户昵称"""
-    return User(id)["name"]
+    try:
+        return User(id)["name"]
+    except NoResultFound:
+        raise HTTPException(404, f"{id} is not a valid user id")
 
 
 @router.put("/name")
