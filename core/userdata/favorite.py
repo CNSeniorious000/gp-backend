@@ -9,6 +9,7 @@ from ..common.sql import engine
 from pydantic import BaseModel
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
+from time import time
 
 router = APIRouter(tags=["favorite"])
 
@@ -128,15 +129,19 @@ async def get_favorites(token: str):
 
 class FavoriteForm(BaseModel):
     url: str
-    timeStamp: int
+    timeStamp: int | None = None
     token: str
+
+    @property
+    def time_stamp(self):
+        return self.timeStamp or int(time())
 
 
 @router.put("/favorite")
 def add_favorite(form: FavoriteForm):
     user_id = parse_id(form.token)
     with Session(engine) as session:
-        session.add(FavoriteItem(user_id=user_id, url=form.url, timeStamp=form.timeStamp))
+        session.add(FavoriteItem(user_id=user_id, url=form.url, timeStamp=form.time_stamp))
         session.commit()
 
 
