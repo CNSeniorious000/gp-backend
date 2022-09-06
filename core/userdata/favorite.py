@@ -141,8 +141,11 @@ class FavoriteForm(BaseModel):
 def add_favorite(form: FavoriteForm):
     user_id = parse_id(form.token)
     with Session(engine) as session:
-        session.add(FavoriteItem(user_id=user_id, url=form.url, timeStamp=form.time_stamp))
+        session.add(item := FavoriteItem(user_id=user_id, url=form.url, timeStamp=form.time_stamp))
         session.commit()
+        session.refresh(item)
+
+    return {"id": item.id}
 
 
 @router.delete("/favorite")
@@ -155,3 +158,5 @@ def remove_favorite(token: str, id: str):
             session.commit()
         else:
             raise HTTPException(401, f"favorite {id} does not belongs to {user_id}")
+
+    return "delete success"

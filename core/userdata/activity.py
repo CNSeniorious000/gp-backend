@@ -96,13 +96,14 @@ class ActivityForm(BaseModel):
 def add_activity(form: ActivityForm):
     user_id = parse_id(form.token)
     with Session(engine) as session:
-        session.add(ActivityItem(user_id=user_id,
-                                 name=form.name,
-                                 description=form.description,
-                                 situation=form.situation))
+        session.add(item := ActivityItem(user_id=user_id,
+                                         name=form.name,
+                                         description=form.description,
+                                         situation=form.situation))
         session.commit()
+        session.refresh(item)
 
-    return "add success"
+    return {"id": item.id}
 
 
 @router.patch("/activity")
