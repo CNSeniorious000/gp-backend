@@ -65,7 +65,8 @@ async def get_meta(url):
 
     # shortcut
     if tag := html.find("meta", {"property": "og:url"}):
-        result["redirected"] = tag["content"]
+        if (redirected := tag["content"]) != url:
+            result["redirected"] = redirected
     elif str(response.url) != url:
         result["redirected"] = str(response.url)
 
