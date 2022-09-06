@@ -1,14 +1,14 @@
+from httpx import AsyncClient, ReadTimeout, ConnectTimeout
 from sqlmodel import SQLModel, Field, select, Session
 from starlette.exceptions import HTTPException
-from httpx import AsyncClient, ReadTimeout
 from functools import cached_property
 from ..common.auth import parse_id
 from urllib.parse import urljoin
+from cachetools import TTLCache
 from ..common.sql import engine
 from pydantic import BaseModel
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
-from cachetools import TTLCache
 
 router = APIRouter(tags=["favorite"])
 
@@ -30,8 +30,9 @@ async def get_meta(url):
 
     try:
         response = await client.get(url)
-    except ReadTimeout as err:
-        url_meta_cache[url] = result = {"title": "ReadTimeout", "abstract": str(err)}
+    except (ReadTimeout, ConnectTimeout) as err:
+        err: ReadTimeout | ConnectTimeout
+        url_meta_cache[url] = result = {"title": err.__class__.__name__, "abstract": str(err)}
         return result
 
     html = BeautifulSoup(response.text, features="lxml")
