@@ -59,3 +59,15 @@ async def wechat_login(form: WeChatForm):
     if not exist(id):
         await register(UserForm(id=id, pwd=sk + id))
     return await login(UserForm(id=id, pwd=sk + id))
+
+
+@router.get("/wechat/avatar/{code}")
+async def wechat_get_avatar(code: str):
+    id = await get_openid(code)
+    return await get_avatar(id)
+
+
+@router.get("/wechat/name/{code}")
+async def wechat_get_name(code: str):
+    id = await get_openid(code)
+    return await get_name(id)
