@@ -12,9 +12,9 @@ from fastapi import APIRouter
 from httpx import AsyncClient
 from itertools import chain
 from ..common.sql import *
+from fastapi import Form
 from hashlib import md5
 from redis import Redis
-from time import time
 import jwt
 
 router = APIRouter(tags=["user"])
@@ -137,16 +137,16 @@ async def register(form: UserForm):
 
 
 @router.post("/user")
-async def login(form: UserForm):
-    if not exist(form.id):
-        return PlainTextResponse(f"user {form.id} doesn't exist", 404)
+async def login(id: str = Form(), pwd: str = Form()):
+    if not exist(id):
+        return PlainTextResponse(f"user {id} doesn't exist", 404)
 
-    user = User(form.id)
-    if user.pwd == form.pwd:
-        return PlainTextResponse(jwt.encode(
-            {"time": time(), "id": form.id},
-            sk, "HS256"
-        ))
+    user = User(id)
+    if user.pwd == pwd:
+        token = f"Bearer {jwt.encode({'scope': 'user', 'id': id}, sk, 'HS256')}"
+        response = PlainTextResponse(token)
+        response.set_cookie("token", token)
+        return response
     else:
         return PlainTextResponse("wrong password", status_code=401)
 

@@ -8,10 +8,11 @@ from fastapi.responses import ORJSONResponse
 from core.user import router, dev_router
 from brotli_asgi import BrotliMiddleware
 from starlette.requests import Request
+from fastapi import FastAPI, Depends
 from core.common.secret import host
+from core.common.auth import Bearer
 from core.user import relation
 from httpx import AsyncClient
-from fastapi import FastAPI
 from os import system
 
 create_db_and_tables()
@@ -33,6 +34,11 @@ app.add_middleware(BrotliMiddleware, quality=11, minimum_size=256)
 count = 0
 
 templates = Jinja2Templates("static")
+
+
+@app.get("/me")
+async def read_me(bearer: Bearer = Depends()):
+    return bearer.user.meta
 
 
 @app.get("/", include_in_schema=False)
