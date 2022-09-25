@@ -1,14 +1,15 @@
 from sqlmodel import SQLModel, Field, Session, select, or_
 from ..common.secret import app_secret as sk, pool
 from starlette.responses import PlainTextResponse
-from functools import cached_property, lru_cache
 from starlette.exceptions import HTTPException
 from fastapi.responses import ORJSONResponse
 from sqlalchemy.exc import NoResultFound
-from ..common.auth import parse_id
+from fastapi import APIRouter, Depends
+from cachetools.func import ttl_cache
+from ..common.auth import Bearer
+from functools import lru_cache
 from ujson import dumps, loads
 from pydantic import BaseModel
-from fastapi import APIRouter
 from httpx import AsyncClient
 from itertools import chain
 from ..common.sql import *
@@ -32,6 +33,7 @@ class UserItem(SQLModel, table=True):
     id: str = Field(nullable=False, primary_key=True)
     pwd_hash: bytes
     meta: str = "{}"
+    permission: str
 
 
 class PwdChecker:
@@ -63,6 +65,7 @@ class PwdChecker:
             session.refresh(instance.item)
 
 
+# noinspection PyPropertyAccess
 class User:
     pwd = PwdChecker()
 
@@ -83,13 +86,16 @@ class User:
             # del self.meta
             session.add(self.item)
             session.commit()
-            session.refresh(self.item)  # maybe redundant
 
-    @cached_property
+    @property
     def meta(self) -> dict:
         return loads(self.item.meta)
 
-    @cached_property
+    @property
+    def permissions(self) -> list:
+        return [self.id] + self.item.permission.split()
+
+    @property
     def item(self):
         with Session(engine) as session:
             return session.exec(select(UserItem).where(UserItem.id == self.id)).one()
@@ -97,9 +103,46 @@ class User:
     def __repr__(self):
         return f"User({self.id})"
 
-    @property
-    def profile(self):
-        return {"id": self.id, "meta": self.meta}
+
+def ensure(user_id: str):
+    if not exist(user_id):
+        raise HTTPException(400, f"user {user_id} doesn't exist")
+    return user_id
+
+
+@router.get("/permission")
+def get_permissions(bearer: Bearer = Depends()):
+    return bearer.user.permissions
+
+
+@router.put("/permission", response_class=PlainTextResponse)
+def add_permission(from_user_id: str = Depends(ensure), to_bearer: Bearer = Depends()):
+    if from_user_id in to_bearer.user.permissions:
+        return f"{User(from_user_id)} already in {to_bearer.user}'s permission list"
+
+    to_user_item = to_bearer.user.item
+    with Session(engine) as session:
+        to_user_item.permission = " ".join(to_user_item.permission.split() + [from_user_id])
+        session.add(to_user_item)
+        session.commit()
+        return f"add {User(from_user_id)} to {to_bearer.user}'s permission list successfully"
+
+
+@router.delete("/permission", response_class=PlainTextResponse)
+async def remove_permission(from_user_id: str = Depends(ensure), to_bearer: Bearer = Depends()):
+    permission = to_bearer.user.item.permission
+
+    if from_user_id not in permission:
+        raise HTTPException(404, f"{User(from_user_id)} not in {to_bearer.user}'s permission list")
+
+    to_user_item = to_bearer.user.item
+    with Session(engine) as session:
+        permissions = permission.split()
+        permissions.remove(from_user_id)
+        to_user_item.permission = " ".join(permissions)
+        session.add(to_user_item)
+        session.commit()
+        return f"remove {User(from_user_id)} from {to_bearer.user}'s permission list successfully"
 
 
 class UserForm(BaseModel):
@@ -108,11 +151,12 @@ class UserForm(BaseModel):
 
 
 class ResetPwdForm(BaseModel):
-    token: str
+    old_pwd: str
     new_pwd: str
 
 
 @router.get("/user")
+@ttl_cache(1234, 5)
 def exist(id: str):
     try:
         return User(id).item.id == id
@@ -152,24 +196,17 @@ async def login(id: str = Form(), pwd: str = Form()):
 
 
 @router.patch("/user")
-async def reset_pwd(form: ResetPwdForm):
-    try:
-        id = jwt.decode(form.token, sk, "HS256")["id"]  # ensure valid
-    except jwt.InvalidSignatureError as err:
-        return PlainTextResponse(f"{type(err).__qualname__}: {str(err)}", 403)  # hacking?
-    except jwt.DecodeError as err:
-        return PlainTextResponse(f"{type(err).__qualname__}: {str(err)}", 400)  # just playing
-    except (TypeError, KeyError):
-        import traceback
-        return PlainTextResponse(traceback.format_exc(chain=False), 500)  # maybe wrong jwt or wrong head
-
-    User(id).pwd = form.new_pwd
-    return ORJSONResponse({"hex": repr(User(id).pwd.pwd_hash.hex())}, 201)
+async def reset_pwd(form: ResetPwdForm, bearer: Bearer = Depends()):
+    user = bearer.user
+    if user.pwd == form.old_pwd:
+        user.pwd = form.new_pwd
+    else:
+        return PlainTextResponse("wrong password", status_code=401)
 
 
 @router.delete("/user")
-async def erase(token: str):
-    id = parse_id(token)
+async def erase(bearer: Bearer = Depends()):
+    id = bearer.id
     if not exist(id):
         return PlainTextResponse(f"user {id} doesn't exist", 404)
 
@@ -206,10 +243,9 @@ async def get_avatar(id: str):
 
 
 @router.put("/avatar")
-async def set_avatar(token: str, url: str):
+async def set_avatar(url: str, bearer: Bearer = Depends()):
     """设置用户头像"""
-    user = User(parse_id(token))
-    user["avatar"] = url
+    bearer.user["avatar"] = url
 
 
 @router.get("/name/{id}")
@@ -222,7 +258,6 @@ async def get_name(id: str):
 
 
 @router.put("/name")
-async def set_name(token: str, name: str):
+async def set_name(name: str, bearer: Bearer = Depends()):
     """设置用户昵称"""
-    user = User(parse_id(token))
-    user["name"] = name
+    bearer.user["name"] = name

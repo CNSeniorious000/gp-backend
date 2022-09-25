@@ -14,22 +14,24 @@ class RelationItem(SQLModel, table=True):
 
 
 class NewRelationForm(BaseModel):
-    token: str
     to_user_id: str
     relation: str
+    permission: bool
 
 
 @router.put("/relationship")
-async def new_relationship(form: NewRelationForm):
-    from_user_id = parse_id(form.token)
+async def new_relationship(form: NewRelationForm, to_bearer: Bearer = Depends()):
+    from_user_id = to_bearer.id
     with Session(engine) as session:
         session.add(RelationItem(from_user_id=from_user_id, to_user_id=form.to_user_id, relation=form.relation))
         session.commit()
 
+    add_permission(from_user_id, to_bearer)
+
 
 @router.get("/relationship")
-async def get_relationship(token: str, verbose: bool = True):
-    user = User(parse_id(token))
+async def get_relationship(token: str, bearer: Bearer = Depends(), verbose: bool = True):
+    user = bearer.user
     results = []
     with Session(engine) as session:
         for item in session.exec(select(RelationItem).where(RelationItem.from_user_id == user.id)):

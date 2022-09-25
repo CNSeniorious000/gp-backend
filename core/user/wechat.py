@@ -1,5 +1,5 @@
-from starlette.exceptions import HTTPException
 from ..common.secret import app_id as ak
+from fastapi import Body
 from .impl import *
 
 openid_cache = Redis(connection_pool=pool, db=1)
@@ -38,36 +38,26 @@ async def get_openid(code: str):
                     raise HTTPException(500, "微信接口繁忙，此时请开发者稍候再试")
 
 
-class WeChatForm(BaseModel):
-    code: str
-
-
 @router.get("/wechat/user")
-async def wechat_exist(code: str):
+async def wechat_exist(code: str = Body()):
     return exist(await get_openid(code))
 
 
-@router.put("/wechat/user", deprecated=True)
-async def wechat_register(form: WeChatForm):
-    id = await get_openid(form.code)
-    return await register(UserForm(id=id, pwd=sk + id))
-
-
 @router.post("/wechat/user")
-async def wechat_login(form: WeChatForm):
-    id = await get_openid(form.code)
+async def wechat_login(code: str = Body()):
+    id = await get_openid(code)
     if not exist(id):
         await register(UserForm(id=id, pwd=sk + id))
-    return await login(UserForm(id=id, pwd=sk + id))
+    return await login(id, sk + id)
 
 
-@router.get("/wechat/avatar/{code}")
+@router.get("/wechat/avatar")
 async def wechat_get_avatar(code: str):
     id = await get_openid(code)
     return await get_avatar(id)
 
 
-@router.get("/wechat/name/{code}")
+@router.get("/wechat/name")
 async def wechat_get_name(code: str):
     id = await get_openid(code)
     return await get_name(id)

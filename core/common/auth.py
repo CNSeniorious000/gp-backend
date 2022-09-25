@@ -5,7 +5,8 @@ import jwt
 
 
 class Bearer:
-    def __init__(self, authorization: str = Header(default=None), token: str = Cookie(default=None)):
+    def __init__(self, authorization: str = Header(include_in_schema=False, default=None),
+                 token: str = Cookie(default=None, include_in_schema=False)):
         auth = authorization or token
         if auth is None:
             raise self.no_auth_error
@@ -17,7 +18,6 @@ class Bearer:
             result = jwt.decode(token, sk, "HS256")
 
             self.id = result["id"]
-            self.scopes = result.get("scope").split()
 
         except (KeyError, jwt.InvalidSignatureError) as err:
             raise HTTPException(403, str(err))
