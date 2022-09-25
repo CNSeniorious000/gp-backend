@@ -40,7 +40,7 @@ class Bearer:
 
 def parse_id(token: str):
     try:
-        payload = jwt.decode(token, sk, "HS256")
+        payload = jwt.decode(token.removeprefix("Bearer "), sk, "HS256")
         return payload["id"]
     except jwt.InvalidSignatureError as err:
         raise HTTPException(403, str(err))
