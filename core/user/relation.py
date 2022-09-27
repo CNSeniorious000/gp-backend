@@ -17,6 +17,7 @@ class RelationPut(BaseModel):
     from_user_id: str
     to_user_id: str
     relation: str
+    permission: bool = False
 
 
 @router.put("/relative")
@@ -33,15 +34,17 @@ async def add_relative(data: RelationPut, bearer: Bearer = Depends()):
     return item
 
 
-@router.get("/relative/{id}")
-async def get_relatives(bearer: Bearer = Depends()):
+@router.get("/relative")
+async def get_relatives(id: str | None = None, bearer: Bearer = Depends()):
+    from_user_id = id or bearer.id
     user = bearer.user
     with Session(engine) as session:
         return [
             {
-                "id": item.to_user_id,
+                "from_user_id": from_user_id,
+                "to_user_id": item.to_user_id,
                 "relation": item.relation,
                 "permitted": user.id in User(item.to_user_id).permissions
             }
-            for item in session.exec(select(RelationItem).where(RelationItem.from_user_id == user.id))
+            for item in session.exec(select(RelationItem).where(RelationItem.from_user_id == from_user_id))
         ]
