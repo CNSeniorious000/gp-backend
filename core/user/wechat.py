@@ -1,12 +1,17 @@
-from ..common.secret import app_id as ak
-from fastapi import Body
+from ..common.secret import app_id_0 as ak_0, app_id_1 as ak_1
+from enum import Enum
 from .impl import *
 
 openid_cache = Redis(connection_pool=pool, db=1)
 
 
+class ClientType(Enum):
+    child = 0
+    elder = 1
+
+
 @router.get("/openid", response_class=PlainTextResponse)
-async def get_openid(code: str):
+async def get_openid(code: str, is_elder: ClientType):
     """ # 获取微信用户openid
     ## [登录凭证校验](https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/user-login/code2Session.html)
     - 结果将在服务端缓存120秒
@@ -19,7 +24,8 @@ async def get_openid(code: str):
     except KeyError:
         response: dict = (await client.get(
             "https://api.weixin.qq.com/sns/jscode2session", params=dict(
-                appid=ak, secret=sk, js_code=code, grant_type="authorization_code"
+                appid=ak_1 if is_elder else ak_0, secret=sk_1 if is_elder else sk_0,
+                js_code=code, grant_type="authorization_code"
             ))).json()
         if (openid := response.get("openid", None)) is not None:
             openid_cache.set(code, openid, 120)
@@ -44,8 +50,8 @@ async def wechat_exist(code):
 
 
 @router.post("/wechat/user")
-async def wechat_login(code):
-    id = await get_openid(code)
+async def wechat_login(code, is_elder: ClientType):
+    id = await get_openid(code, is_elder)
     if not exist(id):
-        await register(UserPut(id=id, pwd=sk + id))
-    return await login(id, sk + id)
+        await register(UserPut(id=id, pwd=sk_1 + id))
+    return await login(id, sk_1 + id)

@@ -1,13 +1,15 @@
 from starlette.exceptions import HTTPException
-from .secret import app_secret as sk
-from fastapi import Header, Cookie
+from fastapi import Header, Cookie, Query
+from .secret import app_secret_1 as sk_1
 import jwt
 
 
 class Bearer:
-    def __init__(self, authorization: str = Header(include_in_schema=False, default=None),
-                 token: str = Cookie(default=None, include_in_schema=False)):
-        auth = authorization or token
+    def __init__(self,
+                 authorization: str = Header(None, include_in_schema=False),
+                 token_cookie: str = Cookie(None, include_in_schema=False, alias="token"),
+                 token_query: str = Query(None, include_in_schema=False, alias="token")):
+        auth = token_query or authorization or token_cookie
         if auth is None:
             raise self.no_auth_error
 
@@ -15,7 +17,7 @@ class Bearer:
             if "Bearer " not in auth:
                 raise self.bearer_error
             token = auth.removeprefix("Bearer ")
-            result = jwt.decode(token, sk, "HS256")
+            result = jwt.decode(token, sk_1, "HS256")
 
             self.id = result["id"]
 
@@ -40,7 +42,7 @@ class Bearer:
 
 def parse_id(token: str):
     try:
-        payload = jwt.decode(token.removeprefix("Bearer "), sk, "HS256")
+        payload = jwt.decode(token.removeprefix("Bearer "), sk_1, "HS256")
         return payload["id"]
     except jwt.InvalidSignatureError as err:
         raise HTTPException(403, str(err))

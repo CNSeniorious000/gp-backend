@@ -1,5 +1,5 @@
+from ..common.secret import app_secret_0 as sk_0, app_secret_1 as sk_1, pool
 from sqlmodel import SQLModel, Field, Session, select, or_
-from ..common.secret import app_secret as sk, pool
 from starlette.responses import PlainTextResponse
 from starlette.exceptions import HTTPException
 from fastapi.responses import ORJSONResponse
@@ -145,6 +145,13 @@ async def remove_permission(from_user_id: str = Depends(ensure), to_bearer: Bear
         return f"remove {User(from_user_id)} from {to_bearer.user}'s permission list successfully"
 
 
+@router.get("/test_permission", deprecated=True)
+def verify_permitted(from_user_id, to_user_id):
+    if from_user_id not in User(to_user_id).permissions:
+        raise HTTPException(403, f"User({from_user_id}) don't have permission to view User({to_user_id})'s information")
+    return True
+
+
 class UserPut(BaseModel):
     id: str
     pwd: str
@@ -167,7 +174,7 @@ def exist(id: str):
 @router.put("/user")
 async def register(data: UserPut):
     if exist(data.id):
-        return PlainTextResponse(f"user {data.id} already exists", 403)
+        return PlainTextResponse(f"user {data.id} already exists", 401)
 
     with Session(engine) as session:
         user = UserItem(id=data.id, pwd_hash=md5_hash(data.pwd))
@@ -175,7 +182,7 @@ async def register(data: UserPut):
         session.commit()
         session.refresh(user)  # maybe redundant
 
-    return ORJSONResponse({"hex": User(data.id).pwd.pwd_hash.hex()}, 201)
+    return ORJSONResponse({"id": user.id, "hex": user.pwd_hash.hex()}, 201)
 
 
 @router.post("/user")
@@ -185,7 +192,7 @@ async def login(id: str = Form(), pwd: str = Form()):
 
     user = User(id)
     if user.pwd == pwd:
-        token = f"Bearer {jwt.encode({'scope': 'user', 'id': id}, sk, 'HS256')}"
+        token = f"Bearer {jwt.encode({'scope': 'user', 'id': id}, sk_1, 'HS256')}"
         response = PlainTextResponse(token)
         response.set_cookie("token", token)
         return response
