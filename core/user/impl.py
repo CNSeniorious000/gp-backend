@@ -30,10 +30,10 @@ def md5_hash(string: str) -> bytes:
 
 class UserItem(SQLModel, table=True):
     __tablename__ = "users"
-    id: str = Field(nullable=False, primary_key=True)
+    id: str = Field(None, nullable=False, primary_key=True)
     pwd_hash: bytes
     meta: str = "{}"
-    permission: str
+    permission: str = ""
 
 
 class PwdChecker:
@@ -80,11 +80,11 @@ class User:
         return self.meta.get(key)
 
     def __setitem__(self, key, val):
-        self.meta[key] = val
+        (meta := self.meta)[key] = val
         with Session(engine) as session:
-            self.item.meta = dumps(self.meta, ensure_ascii=False)
-            # del self.meta
-            session.add(self.item)
+            item = self.item
+            item.meta = dumps(meta, ensure_ascii=False)
+            session.add(item)
             session.commit()
 
     @property
@@ -145,12 +145,12 @@ async def remove_permission(from_user_id: str = Depends(ensure), to_bearer: Bear
         return f"remove {User(from_user_id)} from {to_bearer.user}'s permission list successfully"
 
 
-class UserForm(BaseModel):
+class UserPut(BaseModel):
     id: str
     pwd: str
 
 
-class ResetPwdForm(BaseModel):
+class ResetPwd(BaseModel):
     old_pwd: str
     new_pwd: str
 
@@ -165,19 +165,17 @@ def exist(id: str):
 
 
 @router.put("/user")
-async def register(form: UserForm):
-    if exist(form.id):
-        return PlainTextResponse(f"user {form.id} already exists", 403)
+async def register(data: UserPut):
+    if exist(data.id):
+        return PlainTextResponse(f"user {data.id} already exists", 403)
 
     with Session(engine) as session:
-        user = UserItem()
-        user.id = form.id
-        user.pwd_hash = md5_hash(form.pwd)
+        user = UserItem(id=data.id, pwd_hash=md5_hash(data.pwd))
         session.add(user)
         session.commit()
         session.refresh(user)  # maybe redundant
 
-    return ORJSONResponse({"hex": User(form.id).pwd.pwd_hash.hex()}, 201)
+    return ORJSONResponse({"hex": User(data.id).pwd.pwd_hash.hex()}, 201)
 
 
 @router.post("/user")
@@ -196,7 +194,7 @@ async def login(id: str = Form(), pwd: str = Form()):
 
 
 @router.patch("/user")
-async def reset_pwd(form: ResetPwdForm, bearer: Bearer = Depends()):
+async def reset_pwd(form: ResetPwd, bearer: Bearer = Depends()):
     user = bearer.user
     if user.pwd == form.old_pwd:
         user.pwd = form.new_pwd
@@ -246,6 +244,7 @@ async def get_avatar(id: str):
 async def set_avatar(url: str, bearer: Bearer = Depends()):
     """设置用户头像"""
     bearer.user["avatar"] = url
+    return url
 
 
 @router.get("/name/{id}")
@@ -261,3 +260,19 @@ async def get_name(id: str):
 async def set_name(name: str, bearer: Bearer = Depends()):
     """设置用户昵称"""
     bearer.user["name"] = name
+    return name
+
+
+@router.get("/geo/{id}")
+async def get_location(id: str = Depends(ensure), bearer: Bearer = Depends()):
+    user = User(id)
+    if bearer.id not in user.permissions:
+        return PlainTextResponse(f"{bearer.user} don't have permission to view {user}", 403)
+
+    return user["location"]
+
+
+@router.put("/geo")
+async def set_location(location: tuple[float, float] = (113.5430570, 22.3571951), bearer: Bearer = Depends()):
+    bearer.user["location"] = str(list(location))
+    return list(location)
