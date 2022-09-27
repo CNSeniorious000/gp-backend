@@ -1,9 +1,9 @@
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from starlette.responses import RedirectResponse, HTMLResponse
+from core.userdata import activity, favorite, reminder
 from core.common.sql import create_db_and_tables
 from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
-from core.userdata import activity, favorite
 from fastapi.responses import ORJSONResponse
 from core.user import router, dev_router
 from brotli_asgi import BrotliMiddleware
@@ -22,6 +22,7 @@ app = FastAPI(title="守护青松 Guard Pine", version="0.2.7",
               openapi_tags=[
                   {"name": "dev", "description": "Develop tools, **will be removed in the future.**"},
                   {"name": "user", "description": "**User login** and more."},
+                  {"name": "reminder", "description": "备忘录增删查改"},
                   {"name": "activity", "description": "活动增删查改"},
                   {"name": "favorite", "description": "收藏增删查改"},
                   {"name": "relation", "description": "关系增删查改"},
@@ -102,6 +103,7 @@ async def redoc_html(request: Request):
 
 app.include_router(dev_router)
 app.include_router(router)
+app.include_router(reminder.router)
 app.include_router(relation.router)
 app.include_router(activity.router)
 app.include_router(favorite.router)

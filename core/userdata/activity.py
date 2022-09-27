@@ -27,15 +27,13 @@ class ActivityItem(SQLModel, table=True):
     situation: Progress
 
     class Config:
-        schema_extra = {
-            "example": {
-                "id": 1,
-                "user_id": "id",
-                "name": "活动名",
-                "description": "这是一个活动",
-                "situation": Progress.doing
-            }
-        }
+        schema_extra = {"example": {
+            "id": 1,
+            "user_id": "id",
+            "name": "活动名",
+            "description": "这是一个活动",
+            "situation": Progress.doing
+        }}
 
 
 @autoprop
