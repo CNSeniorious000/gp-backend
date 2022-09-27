@@ -1,12 +1,10 @@
-from sqlmodel import SQLModel, Field, select, Session
+from sqlmodel import SQLModel, Field as DbField, select, Session
 from starlette.exceptions import HTTPException
-from sqlalchemy.exc import NoResultFound
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
 from ..common.auth import Bearer
 from ..common.sql import engine
-from contextlib import suppress
 from functools import lru_cache
-from pydantic import BaseModel
 from autoprop import autoprop
 from enum import Enum
 
@@ -22,11 +20,22 @@ class Progress(Enum):
 
 class ActivityItem(SQLModel, table=True):
     __tablename__ = "activities"
-    id: int | None = Field(default=None, primary_key=True)
-    user_id: str = Field(foreign_key="users.id")
+    id: int | None = DbField(default=None, primary_key=True)
+    user_id: str = DbField(foreign_key="users.id")
     name: str
     description: str
     situation: Progress
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "user_id": "id",
+                "name": "活动名",
+                "description": "这是一个活动",
+                "situation": Progress.doing
+            }
+        }
 
 
 @autoprop
@@ -86,8 +95,8 @@ def get_activities(bearer: Bearer = Depends()):
 
 
 class ActivityPut(BaseModel):
-    name: str = Field("事件名称", title="asdfasdf")
-    description: str
+    name: str = Field(..., example="活动名称")
+    description: str = Field(..., example="活动描述")
     situation: Progress
 
 
@@ -106,17 +115,20 @@ def add_activity(data: ActivityPut, bearer: Bearer = Depends()):
 
 
 class ActivityPatch(ActivityPut):
-    id: int
+    id: int = Field(..., example="1")
 
 
 @router.patch("/activity", response_model=ActivityItem)
 def update_activity(data: ActivityPatch, bearer: Bearer = Depends()):
     user_id = bearer.id
     activity_id = data.id
-    with Session(engine) as session, suppress(NoResultFound):
-        item = session.exec(select(ActivityItem).where(ActivityItem.id == activity_id)).one()
+    with Session(engine) as session:
+        item = session.exec(select(ActivityItem).where(ActivityItem.id == activity_id)).one_or_none()
+        if item is None:
+            raise HTTPException(404, f"activity {activity_id} does not exist")
         if item.user_id != user_id:
             raise HTTPException(401, f"activity {activity_id} does not belongs to {user_id}")
+
         if data.description is not None:
             item.description = data.description
         if data.situation is not None:
@@ -124,10 +136,9 @@ def update_activity(data: ActivityPatch, bearer: Bearer = Depends()):
 
         session.add(item)
         session.commit()
+        session.refresh(item)
 
-        return item
-
-    raise HTTPException(404, f"activity {activity_id} does not exist")
+    return item
 
 
 @router.delete("/activity", response_model=str)
@@ -146,4 +157,4 @@ def remove_activity(activity_id: int, bearer: Bearer = Depends()):
 
     Activity.__new__.cache_clear()
 
-    return "delete success"
+    return f"delete {activity_id} success"
