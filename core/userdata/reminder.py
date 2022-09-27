@@ -63,7 +63,7 @@ class ReminderPut(BaseModel):
 @router.put("/reminder", response_model=ReminderItem)
 def add_reminder(data: ReminderPut, bearer: Bearer = Depends()):
     creator = bearer.id
-    user_id = ensure(data.user_id) or creator
+    user_id = creator if data.user_id is None else ensure(data.user_id)
     # TODO: verify permissions here
     with Session(engine) as session:
         session.add(item := ReminderItem(
