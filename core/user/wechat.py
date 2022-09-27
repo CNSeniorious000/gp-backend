@@ -22,7 +22,7 @@ async def get_openid(code: str, is_elder: bool):
                 appid=ak_1 if is_elder else ak_0, secret=sk_1 if is_elder else sk_0,
                 js_code=code, grant_type="authorization_code"
             ))).json()
-        if (openid := response.get("openid", None)) is not None:
+        if (openid := response.get("openid")) is not None:
             openid_cache.set(code, openid, 120)
             return openid
         else:
@@ -31,6 +31,8 @@ async def get_openid(code: str, is_elder: bool):
                     raise HTTPException(400, "js_code无效")
                 case 45011:
                     raise HTTPException(429, "API调用太频繁，请稍候再试")
+                case 40163:
+                    raise HTTPException(410, "code been used")
                 case 40226:
                     raise HTTPException(451, "高风险等级用户，小程序登录拦截。风险等级详见"
                                              "[用户安全解方案](https://developers.weixin.qq.com/"
