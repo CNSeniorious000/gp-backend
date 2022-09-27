@@ -1,5 +1,3 @@
-from ..userdata.favorite import get_favorites
-from ..userdata.activity import get_activities
 from .impl import *
 
 router = APIRouter(tags=["relation"])
@@ -14,8 +12,8 @@ class RelationItem(SQLModel, table=True):
 
 
 class RelativePut(BaseModel):
-    from_user_id: str | None = Field(None, description="添加谁的亲戚")
-    to_user_id: str = Field("id", description="添加谁")
+    from_user_id: str | None = Field("openid of mine", description="添加谁的亲戚，不填则为自己")
+    to_user_id: str = Field("openid of somebody", description="添加谁")
     relation: str = Field("父/母", description="什么关系")
 
 

@@ -3,7 +3,7 @@ from httpx import AsyncClient
 from random import choice, randrange
 from pydantic import BaseModel, Field
 
-router = APIRouter(tags=["cards"])
+router = APIRouter(tags=["card"])
 names = open("core/card/names.txt", encoding="utf-8").read().split()
 client = AsyncClient(http2=True, follow_redirects=True, verify=False)
 

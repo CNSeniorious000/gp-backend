@@ -17,7 +17,7 @@ from core import card
 from os import system
 
 create_db_and_tables()
-app = FastAPI(title="守护青松 Guard Pine", version="0.3.0",
+app = FastAPI(title="守护青松 Guard Pine", version="0.3.2",
               license_info={"name": "MIT License", "url": "https://mit-license.org/"},
               contact={"name": "Muspi Merol", "url": "https://muspimerol.site/", "email": "admin@muspimerol.site"},
               openapi_tags=[
@@ -27,6 +27,7 @@ app = FastAPI(title="守护青松 Guard Pine", version="0.3.0",
                   {"name": "activity", "description": "活动增删查改"},
                   {"name": "favorite", "description": "收藏增删查改"},
                   {"name": "relation", "description": "关系增删查改"},
+                  {"name": "card", "description": "首页卡片 **fake news**"}
               ],
               # description=open("./readme.md", encoding="utf-8").read(),
               description="### “守护青松”国家级大创项目 [部署地址](https://muspimerol.site:9999/)",
@@ -38,9 +39,13 @@ count = 0
 templates = Jinja2Templates("static")
 
 
-@app.get("/me")
+@app.get("/me", tags=["dev"])
 async def read_me(bearer: Bearer = Depends()):
-    return bearer.user.meta
+    return {
+        "id": bearer.id,
+        "permissions": bearer.user.permissions,
+        "meta": bearer.user.meta
+    }
 
 
 @app.get("/", include_in_schema=False)

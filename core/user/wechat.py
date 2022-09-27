@@ -5,7 +5,12 @@ from .impl import *
 openid_cache = Redis(connection_pool=pool, db=1)
 
 
-@router.get("/openid", response_class=PlainTextResponse)
+@router.get("/openid", response_class=PlainTextResponse,
+            responses={400: {"description": "js_code无效"},
+                       429: {"description": "API调用太频繁，请稍候再试"},
+                       410: {"description": "code been used"},
+                       451: {"description": "高风险等级用户，小程序登录拦截"},
+                       500: {"description": "微信接口繁忙，此时请开发者稍候再试"}})
 async def get_openid(code: str, is_elder: bool):
     """ # 获取微信用户openid
     ## [登录凭证校验](https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/user-login/code2Session.html)
