@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel, Field as DbField, select, Session
+from starlette.exceptions import HTTPException
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from ..common.auth import Bearer
@@ -42,6 +43,13 @@ class Reminder:
     def item(self):
         with Session(engine) as session:
             return session.exec(select(ReminderItem).where(ReminderItem.id == self.id)).one()
+
+
+@router.get("/reminder", response_model=list[ReminderItem])
+def get_reminders(bearer: Bearer = Depends()):
+    user_id = bearer.id
+    with Session(engine) as session:
+        return session.exec(select(ReminderItem).where(ReminderItem.user_id == user_id)).all()
 
 
 class ReminderPut(BaseModel):
@@ -91,3 +99,20 @@ def update_reminder(data: ReminderPatch, bearer: Bearer = Depends()):
         session.refresh(item)
 
     return item
+
+
+@router.delete("/reminder", response_model=str)
+def remove_reminder(reminder_id: int, bearer: Bearer = Depends()):
+    user_id = bearer.id
+    with Session(engine) as session:
+        reminder = session.exec(select(ReminderItem).where(ReminderItem.id == reminder_id)).one_or_none()
+        if reminder is None:
+            raise HTTPException(404, f"reminder {reminder_id} does not exist")
+
+        if user_id in [reminder.user_id, reminder.creator]:  # TODO: 这里应该改成有权限修改即可
+            session.delete(reminder)
+            session.commit()
+        else:
+            raise HTTPException(401, f"reminder {reminder_id} is beyond {user_id}'s scope")
+
+    return f"delete {reminder_id} success"
