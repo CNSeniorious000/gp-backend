@@ -13,6 +13,7 @@ from core.common.secret import host
 from core.common.auth import Bearer
 from core.user import relation
 from httpx import AsyncClient
+from core import card
 from os import system
 
 create_db_and_tables()
@@ -107,5 +108,6 @@ app.include_router(reminder.router)
 app.include_router(relation.router)
 app.include_router(activity.router)
 app.include_router(favorite.router)
+app.include_router(card.router)
 app.mount("/static", StaticFiles(directory="static"))
 app.mount("/", StaticFiles(directory="static"))
