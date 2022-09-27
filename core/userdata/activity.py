@@ -1,23 +1,23 @@
 from sqlmodel import SQLModel, Field, select, Session
-from functools import lru_cache, cached_property
 from starlette.exceptions import HTTPException
 from sqlalchemy.exc import NoResultFound
-from ..common.auth import parse_id
+from fastapi import APIRouter, Depends
+from ..common.auth import Bearer
 from ..common.sql import engine
 from contextlib import suppress
+from functools import lru_cache
 from pydantic import BaseModel
 from autoprop import autoprop
-from fastapi import APIRouter
-from enum import IntEnum
+from enum import Enum
 
 router = APIRouter(tags=["activity"])
 
 
-class Progress(IntEnum):
-    canceled = 0
-    todo = 1
-    doing = 2
-    done = 3
+class Progress(Enum):
+    todo = "todo"
+    doing = "doing"
+    done = "done"
+    canceled = "canceled"
 
 
 class ActivityItem(SQLModel, table=True):
@@ -38,7 +38,7 @@ class Activity:
     def __init__(self, id):
         self.id = id
 
-    @cached_property
+    @property
     def item(self):
         with Session(engine) as session:
             return session.exec(select(ActivityItem).where(ActivityItem.id == self.id)).one()
@@ -78,68 +78,71 @@ class Activity:
             session.refresh(self.item)
 
 
-@router.get("/activity")
-def get_activities(token: str):
-    user_id = parse_id(token)
+@router.get("/activity", response_model=list[ActivityItem])
+def get_activities(bearer: Bearer = Depends()):
+    user_id = bearer.id
     with Session(engine) as session:
         return session.exec(select(ActivityItem).where(ActivityItem.user_id == user_id)).all()
 
 
-class ActivityForm(BaseModel):
-    name: str
-    token: str
+class ActivityPut(BaseModel):
+    name: str = Field("事件名称", title="asdfasdf")
     description: str
     situation: Progress
 
 
-@router.put("/activity")
-def add_activity(form: ActivityForm):
-    user_id = parse_id(form.token)
+@router.put("/activity", response_model=ActivityItem)
+def add_activity(data: ActivityPut, bearer: Bearer = Depends()):
+    user_id = bearer.id
     with Session(engine) as session:
         session.add(item := ActivityItem(user_id=user_id,
-                                         name=form.name,
-                                         description=form.description,
-                                         situation=form.situation))
+                                         name=data.name,
+                                         description=data.description,
+                                         situation=data.situation))
         session.commit()
         session.refresh(item)
 
-    return {"id": item.id}
+        return item
 
 
-@router.patch("/activity")
-def update_activity(id: int, token: str, description: str | None = None, situation: Progress | None = None):
-    if description is None and situation is None:
-        raise HTTPException(400, "nothing changes")
-    user_id = parse_id(token)
+class ActivityPatch(ActivityPut):
+    id: int
+
+
+@router.patch("/activity", response_model=ActivityItem)
+def update_activity(data: ActivityPatch, bearer: Bearer = Depends()):
+    user_id = bearer.id
+    activity_id = data.id
     with Session(engine) as session, suppress(NoResultFound):
-        item = session.exec(select(ActivityItem).where(ActivityItem.id == id)).one()
+        item = session.exec(select(ActivityItem).where(ActivityItem.id == activity_id)).one()
         if item.user_id != user_id:
-            raise HTTPException(401, f"activity {id} does not belongs to {user_id}")
-        if description is not None:
-            item.description = description
-        if situation is not None:
-            item.situation = situation.value  # if no ".value" will fail this update
+            raise HTTPException(401, f"activity {activity_id} does not belongs to {user_id}")
+        if data.description is not None:
+            item.description = data.description
+        if data.situation is not None:
+            item.situation = data.situation  # if no ".value" will fail this update
 
         session.add(item)
         session.commit()
-        return "update success"
 
-    raise HTTPException(404, f"activity {id} does not exist")
+        return item
+
+    raise HTTPException(404, f"activity {activity_id} does not exist")
 
 
-@router.delete("/activity")
-def remove_activity(token: str, id: str):
-    user_id = parse_id(token)
+@router.delete("/activity", response_model=str)
+def remove_activity(activity_id: int, bearer: Bearer = Depends()):
+    user_id = bearer.id
     with Session(engine) as session:
-        activity = session.exec(select(ActivityItem).where(ActivityItem.id == id)).one_or_none()
+        activity = session.exec(select(ActivityItem).where(ActivityItem.id == activity_id)).one_or_none()
         if activity is None:
-            raise HTTPException(404, f"activity {id} does not exist")
+            raise HTTPException(404, f"activity {activity_id} does not exist")
 
         if user_id == activity.user_id:
             session.delete(activity)
             session.commit()
         else:
-            raise HTTPException(401, f"activity {id} does not belongs to {user_id}")
+            raise HTTPException(401, f"activity {activity_id} does not belongs to {user_id}")
 
     Activity.__new__.cache_clear()
 

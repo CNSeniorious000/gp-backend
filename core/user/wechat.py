@@ -39,12 +39,12 @@ async def get_openid(code: str):
 
 
 @router.get("/wechat/user")
-async def wechat_exist(code: str = Body()):
+async def wechat_exist(code):
     return exist(await get_openid(code))
 
 
 @router.post("/wechat/user")
-async def wechat_login(code: str = Body()):
+async def wechat_login(code):
     id = await get_openid(code)
     if not exist(id):
         await register(UserForm(id=id, pwd=sk + id))
