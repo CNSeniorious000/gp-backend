@@ -5,13 +5,8 @@ from .impl import *
 openid_cache = Redis(connection_pool=pool, db=1)
 
 
-class ClientType(Enum):
-    child = 0
-    elder = 1
-
-
 @router.get("/openid", response_class=PlainTextResponse)
-async def get_openid(code: str, is_elder: ClientType):
+async def get_openid(code: str, is_elder: bool):
     """ # 获取微信用户openid
     ## [登录凭证校验](https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/user-login/code2Session.html)
     - 结果将在服务端缓存120秒
@@ -50,7 +45,7 @@ async def wechat_exist(code):
 
 
 @router.post("/wechat/user")
-async def wechat_login(code, is_elder: ClientType):
+async def wechat_login(code, is_elder: bool):
     id = await get_openid(code, is_elder)
     if not exist(id):
         await register(UserPut(id=id, pwd=sk_1 + id))
