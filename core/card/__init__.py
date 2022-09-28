@@ -24,17 +24,28 @@ def get_random_name():
 @router.get("/home/{n}")
 def get_homes(n: int = Field(3, ge=1)):
     return [
-        HomeCard(id=i, name=choice(names), image_url="/image/home", location="金凤路18号",
-                 view_count=randrange(100, 100_000), search_count=randrange(100, 100_000))
+        HomeCard(id=i, name=choice(names), location="金凤路18号",
+                 view_count=randrange(100, 100_000), search_count=randrange(100, 100_000),
+                 image_url=f"https://gp.muspimerol.site/image/home/{randrange(10)}")
         for i in range(n)
     ]
 
 
-@router.get("/image/home")
-async def get_home_image():
+image_cache = {}
+
+
+@router.get("/image/home/{n}")
+async def get_home_image(n: int):
+    if n in image_cache:
+        response = image_cache[n]
+        return response
+
     r = await client.get("https://place.dog/800/400")
     headers = r.headers
     for key in ["content-length", "content-length"]:
         if key in headers:
             del headers[key]
-    return Response(r.content, r.status_code, headers=headers)
+
+    response = Response(r.content, r.status_code, headers)
+    image_cache[n] = response
+    return response
