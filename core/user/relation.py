@@ -1,3 +1,4 @@
+from random import randrange
 from .impl import *
 
 router = APIRouter(tags=["relation"])
@@ -49,3 +50,24 @@ async def get_relatives(id: str | None, bearer: Bearer = Depends()):
             }
             for item in session.exec(select(RelationItem).where(RelationItem.from_user_id == from_user_id))
         ]
+
+
+match_cache = Redis(connection_pool=pool, db=2)
+
+
+@router.post("/match", response_model=str, response_class=PlainTextResponse)
+def generate_sequence(n: int = 4, bearer: Bearer = Depends(), expire: int = 60):
+    while (sequence := "".join([str(randrange(10)) for _ in range(n)])) in match_cache:
+        pass
+    match_cache[sequence] = bearer.id
+    match_cache.set(sequence, bearer.id, expire)
+
+    return sequence
+
+
+@router.get("/match", response_model=str, response_class=PlainTextResponse)
+def match_sequence(sequence: str):
+    try:
+        return match_cache[sequence]
+    except KeyError:
+        raise HTTPException(404, f"key {sequence} not found")
