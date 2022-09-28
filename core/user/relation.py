@@ -57,8 +57,12 @@ match_cache = Redis(connection_pool=pool, db=2)
 
 @router.post("/match", response_model=str, response_class=PlainTextResponse)
 def generate_sequence(n: int = 4, bearer: Bearer = Depends(), expire: int = 60):
+    count = 0
     while (sequence := "".join([str(randrange(10)) for _ in range(n)])) in match_cache:
-        pass
+        count += 1
+        if count > 1234:
+            raise HTTPException(508, f"time out, maybe run out of all possibilities of {n}-digit combinations")
+
     match_cache[sequence] = bearer.id
     match_cache.set(sequence, bearer.id, expire)
 
