@@ -31,6 +31,11 @@ class ReminderItem(SQLModel, table=True):
         }}
 
 
+from ..common.sql import create_db_and_tables
+
+create_db_and_tables()
+
+
 class Reminder:
     @lru_cache(10)
     def __new__(cls, id):
@@ -61,8 +66,9 @@ class ReminderPut(BaseModel):
 
 
 @router.put("/reminder", response_model=ReminderItem)
-def add_reminder(data: ReminderPut, bearer: Bearer = Depends()):
+def add_reminder(data: str, bearer: Bearer = Depends()):
     creator = bearer.id
+    data = ReminderPut.parse_raw(data)
     user_id = creator if data.user_id is None else ensure(data.user_id)
     # TODO: verify permissions here
     with Session(engine) as session:
