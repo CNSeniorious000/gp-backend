@@ -193,7 +193,7 @@ async def login(id: str = Form(), pwd: str = Form()):
     user = User(id)
     if user.pwd == pwd:
         token = f"Bearer {jwt.encode({'scope': 'user', 'id': id}, sk_1, 'HS256')}"
-        response = PlainTextResponse(token)
+        response = ORJSONResponse({"token": token, "bio": user["bio"], "name": user["name"], "avatar": user["avatar"]})
         response.set_cookie("token", token)
         return response
     else:
@@ -268,6 +268,13 @@ async def set_name(name: str, bearer: Bearer = Depends()):
     """设置用户昵称"""
     bearer.user["name"] = name
     return name
+
+
+@router.post("/bio")
+async def set_bio(bio: str, bearer: Bearer = Depends()):
+    """设置用户个性签名"""
+    bearer.user["bio"] = bio
+    return bio
 
 
 @router.get("/geo/{id}")
