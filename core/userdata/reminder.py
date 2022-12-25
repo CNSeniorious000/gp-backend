@@ -64,7 +64,9 @@ class ReminderPut(BaseModel):
 def add_reminder(data: ReminderPut, bearer: Bearer = Depends()):
     creator = bearer.id
     user_id = creator if data.user_id is None else ensure(data.user_id)
-    # TODO: verify permissions here
+    from ..user.impl import verify_permitted
+    verify_permitted(bearer.user, user_id)
+
     with Session(engine) as session:
         session.add(item := ReminderItem(
             user_id=user_id, creator=creator, content=data.content,
@@ -87,7 +89,9 @@ class ReminderPatch(BaseModel):
 
 @router.patch("/reminder", response_model=ReminderItem)
 def update_reminder(data: ReminderPatch, bearer: Bearer = Depends()):
-    # TODO: verify permissions here
+    from ..user.impl import verify_permitted
+    verify_permitted(bearer.user, data.id)
+
     item = Reminder(data.id).item
     item.content = data.content
     item.modification_time = data.modification_time

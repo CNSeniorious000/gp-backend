@@ -18,7 +18,7 @@ class RelativePut(BaseModel):
     relation: str = Field("父/母", description="什么关系")
 
 
-@router.put("/relative", response_model=RelationItem)
+@router.post("/relative", response_model=RelationItem)
 async def add_relative(data: RelativePut, bearer: Bearer = Depends()):
     from_user_id = bearer.id if data.from_user_id is None else ensure(data.from_user_id)
     to_user_id = ensure(data.to_user_id)
