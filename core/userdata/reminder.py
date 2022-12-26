@@ -53,7 +53,7 @@ def get_reminders(bearer: Bearer = Depends()):
 
 
 class ReminderPut(BaseModel):
-    user_id: str | None = Field(None, example="用户id / openid", description="可以填有权限的联系人，若不填即默认自己")
+    user_id: str | None = Field(None, example="用户openid", description="可以填有权限的联系人，若不填即默认自己")
     content: str
     creation_time: float | None = Field(default_factory=time, example=1664257424.4382992,
                                         description="创建时间，不填则用服务器时间")
@@ -63,9 +63,11 @@ class ReminderPut(BaseModel):
 @router.put("/reminder", response_model=ReminderItem)
 def add_reminder(data: ReminderPut, bearer: Bearer = Depends()):
     creator = bearer.id
-    user_id = creator if data.user_id is None else ensure(data.user_id)
-    from ..user.impl import verify_permitted
-    verify_permitted(bearer.user, user_id)
+    if data.user_id is None:
+        user_id = creator
+    else:
+        user_id = data.user_id
+        bearer.ensure_been_permitted_by(user_id)
 
     with Session(engine) as session:
         session.add(item := ReminderItem(
@@ -89,10 +91,9 @@ class ReminderPatch(BaseModel):
 
 @router.patch("/reminder", response_model=ReminderItem)
 def update_reminder(data: ReminderPatch, bearer: Bearer = Depends()):
-    from ..user.impl import verify_permitted
-    verify_permitted(bearer.user, data.id)
-
     item = Reminder(data.id).item
+    bearer.ensure_been_permitted_by(item.user_id)
+
     item.content = data.content
     item.modification_time = data.modification_time
     item.notification_time = data.notification_time

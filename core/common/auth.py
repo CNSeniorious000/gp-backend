@@ -31,6 +31,10 @@ class Bearer:
         from ..user.impl import User
         return User(self.id)
 
+    def ensure_been_permitted_by(self, to_user_id):
+        from ..user.impl import verify_permitted
+        return verify_permitted(self.user.id, to_user_id)
+
     @property
     def no_auth_error(self):
         return HTTPException(401, "can't find token in either headers or cookies", {"WWW-Authenticate": "Bearer"})

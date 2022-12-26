@@ -1,10 +1,11 @@
 from sqlmodel import SQLModel, Field as DbField, select, Session
 from starlette.exceptions import HTTPException
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from ..common.auth import Bearer
 from ..common.sql import engine
 from functools import lru_cache
+from ..user.impl import ensure
 from autoprop import autoprop
 from enum import Enum
 
@@ -22,6 +23,7 @@ class ActivityItem(SQLModel, table=True):
     __tablename__ = "activities"
     id: int | None = DbField(default=None, primary_key=True)
     user_id: str = DbField(foreign_key="users.id")
+    creator: str = DbField(foreign_key="users.id")
     name: str
     description: str
     situation: Progress
@@ -86,8 +88,12 @@ class Activity:
 
 
 @router.get("/activity", response_model=list[ActivityItem])
-def get_activities(bearer: Bearer = Depends()):
-    user_id = bearer.id
+def get_activities(bearer: Bearer = Depends(), user_id: str | None = Query(None, title="列出谁的活动", example="id")):
+    """获取活动。获取亲友的活动暂时只能分别去获取"""
+    if user_id is not None:
+        bearer.ensure_been_permitted_by(ensure(user_id))
+    else:
+        user_id = bearer.id
     with Session(engine) as session:
         return session.exec(select(ActivityItem).where(ActivityItem.user_id == user_id)).all()
 
@@ -96,13 +102,21 @@ class ActivityPut(BaseModel):
     name: str = Field(..., example="活动名称")
     description: str = Field(..., example="活动描述")
     situation: Progress
+    user_id: str | None = Field(None, example="用户openid", description="可以填有权限的联系人，不填则默认为自己")
 
 
 @router.put("/activity", response_model=ActivityItem)
 def add_activity(data: ActivityPut, bearer: Bearer = Depends()):
-    user_id = bearer.id
+    creator = bearer.id
+    if data.user_id is not None:
+        user_id = data.user_id
+        bearer.ensure_been_permitted_by(user_id)
+    else:
+        user_id = creator
+
     with Session(engine) as session:
         session.add(item := ActivityItem(user_id=user_id,
+                                         creator=creator,
                                          name=data.name,
                                          description=data.description,
                                          situation=data.situation))
@@ -113,6 +127,8 @@ def add_activity(data: ActivityPut, bearer: Bearer = Depends()):
 
 
 class ActivityPatch(ActivityPut):
+    """修改活动。暂时还只能号主修改自己的活动"""
+
     id: int = Field(..., example="1")
 
 

@@ -5,6 +5,7 @@ from core.common.sql import create_db_and_tables
 from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 from fastapi.responses import ORJSONResponse
+from sqlalchemy.exc import OperationalError
 from core.user import router, dev_router
 from brotli_asgi import BrotliMiddleware
 from starlette.requests import Request
@@ -33,6 +34,16 @@ app = FastAPI(title="守护青松 Guard Pine", version="0.3.3",
               description="### “守护青松”国家级大创项目 [部署地址](https://muspimerol.site:9999/)",
               docs_url=None, redoc_url=None, default_response_class=ORJSONResponse)
 app.add_middleware(BrotliMiddleware, quality=11, minimum_size=256)
+
+
+@app.middleware("http")
+async def retry_when_losing_connection(request, call_next):
+    try:
+        return await call_next(request)
+    except OperationalError as err:
+        print(err)
+        return await call_next(request)
+
 
 count = 0
 
