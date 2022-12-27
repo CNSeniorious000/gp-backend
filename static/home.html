@@ -3,104 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <title> 守护青松 </title>
-    <style>
-        body {
-            line-height: 3em;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            height: 90vh;
-            text-align: center;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            body {
-                background: black;
-                color: white;
-            }
-
-            a {
-                color: #867894;
-            }
-        }
-
-        @media (prefers-color-scheme: light) {
-            body {
-                background: rgba(240, 128, 128, 0.1);
-            }
-
-            a {
-                color: #bbb;
-            }
-        }
-
-        h1 {
-            margin: 5%;
-            font-family: sans-serif;
-            font-size: calc(2em + 4vw);
-            color: lightcoral;
-        }
-
-        a {
-            margin-left: 10%;
-            margin-right: 10%;
-            display: block;
-            font-size: 1.5em;
-            text-decoration: none;
-            transition-duration: 300ms;
-            border: solid transparent 1pt;
-            border-radius: 3pt;
-            box-sizing: border-box;
-            position: relative;
-        }
-
-        a:hover {
-            border-color: lightcoral;
-            color: lightcoral;
-            opacity: 100%;
-        }
-
-        #logo-box {
-            position: relative;
-            margin-top: 30pt;
-            height: 200pt;
-            display: flex;
-            flex-direction: column;
-            align-self: center;
-        }
-
-        #logo, #logo-shadow {
-            height: 180pt;
-            left: 50%;
-            translate: -50% 0;
-            position: absolute;
-            border-radius: 15pt;
-        }
-
-        #logo {
-            background-color: white;
-        }
-
-        #logo-shadow {
-            background-color: rgba(255, 255, 255, 0.5);
-            scale: 80%;
-            filter: blur(25pt);
-            translate: -50% 25pt;
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime/mini.global.js"></script>
 </head>
-<body>
-<div id="logo-box">
-    <div>
-        <img id="logo-shadow" src="favicon.svg" alt="logo-shadow">
-        <img id="logo" src="favicon.svg" alt="logo">
+<body class="bg-warm-gray-200 dark:bg-warm-gray-900">
+<div class="grid place-content-center h-90vh select-none">
+    <div class="lg:p-15 p-10 transition-all bg-white dark:bg-warm-gray-100 rounded-lg shadow-lg">
+        <div class="flex gap-8 transition-all">
+            <div class="relative">
+                <img class="rounded-2xl h-60" src="favicon.svg" alt="logo">
+                <h1 class="text-4xl m-0 truncate absolute left-50% top-50% translate-x--1/2 translate-y--1/2 text-white">
+                    {{ count }}
+                </h1>
+            </div>
+            <div class="flex flex-col self-center gap-3 text-left text-lg lg:text-xl lg:gap-4 transition-all min-w-20vw">
+                <a class="transition-all no-underline text-warm-gray-600 hover:text-orange-400 font-bold" href="/docs">
+                    Swagger 文档 </a>
+                <hr class="border-t-1 border-b-0 border-l-0 border-r-0 border-opacity-30 m-0 border-orange-500">
+                <a class="transition-all no-underline text-warm-gray-600 hover:text-orange-400" href="/redoc"> ReDoc
+                    文档 </a>
+                <hr class="border-t-1 border-b-0 border-l-0 border-r-0 border-opacity-30 m-0 border-orange-500">
+                <a class="transition-all no-underline text-warm-gray-600 hover:text-orange-400"
+                   href="https://jihulab.com/CNSeniorious000/gp-backend"> 本站开源仓库 </a>
+            </div>
+        </div>
     </div>
 </div>
-<h1> {{ count }} </h1>
-<a href="/docs"><strong> Swagger 文档 </strong></a>
-<a href="/redoc"> ReDoc 文档 </a>
-<a href="/apifox"> Apifox 文档 </a>
-<a href="https://jihulab.com/CNSeniorious000/gp-backend"> 本站开源仓库 </a>
-<a href="/notes"> 后端开发笔记 </a>
 </body>
 </html>
