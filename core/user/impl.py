@@ -277,13 +277,16 @@ async def set_bio(bio: str, bearer: Bearer = Depends()):
     return bio
 
 
-@router.get("/geo/{id}")
-async def get_location(id: str = Depends(ensure), bearer: Bearer = Depends()):
-    user = User(id)
-    if bearer.id not in user.permissions:
-        return PlainTextResponse(f"{bearer.user} don't have permission to view {user}", 403)
+@router.get("/geo")
+async def get_location(id: str = None, bearer: Bearer = Depends()):
+    if id is not None:
+        bearer.ensure_been_permitted_by(ensure(id))
+        user = User(id)
+    else:
+        user = bearer.user
 
-    return user["location"]
+    raw = user["location"]
+    return raw and eval(raw)
 
 
 @router.put("/geo")
