@@ -1,19 +1,21 @@
 from random import randrange
 from .impl import *
+from sqlmodel import Field as DbField
+from pydantic import Field
 
 router = APIRouter(tags=["relation"])
 
 
 class RelationItem(SQLModel, table=True):
     __tablename__ = "relations"
-    id: int | None = Field(default=None, primary_key=True)
-    from_user_id: str = Field(foreign_key="users.id")
-    to_user_id: str = Field(foreign_key="users.id")
+    id: int | None = DbField(default=None, primary_key=True)
+    from_user_id: str = DbField(foreign_key="users.id")
+    to_user_id: str = DbField(foreign_key="users.id")
     relation: str
 
 
 class RelativePut(BaseModel):
-    from_user_id: str | None = Field("openid of mine", description="添加谁的亲戚，不填则为自己")
+    from_user_id: str = Field("openid of myself", description="添加谁的亲戚，不填则为自己")
     to_user_id: str = Field("openid of somebody", description="添加谁")
     relation: str = Field("父/母", description="什么关系")
 
@@ -37,7 +39,7 @@ async def add_relative(data: RelativePut, bearer: Bearer = Depends()):
 
 
 @router.get("/relative")
-async def get_relatives(id: str | None, bearer: Bearer = Depends()):
+async def get_relatives(id: str | None = None, bearer: Bearer = Depends()):
     from_user_id = bearer.id if id is None else ensure(id)
     user = bearer.user
     with Session(engine) as session:
