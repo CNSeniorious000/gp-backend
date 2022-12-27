@@ -14,7 +14,7 @@ from core.common.secret import host
 from core.common.auth import Bearer
 from core.user import relation
 from httpx import AsyncClient
-from core import card
+from core import card, news
 from os import system
 
 create_db_and_tables()
@@ -22,6 +22,7 @@ app = FastAPI(title="守护青松 Guard Pine", version="0.3.3",
               license_info={"name": "MIT License", "url": "https://mit-license.org/"},
               contact={"name": "Muspi Merol", "url": "https://muspimerol.site/", "email": "admin@muspimerol.site"},
               openapi_tags=[
+                  {"name": "news", "description": "从[养老网](https://www.yanglao.com.cn/)获取到的文章"},
                   {"name": "dev", "description": "Develop tools, **will be removed in the future.**"},
                   {"name": "user", "description": "**User login** and more."},
                   {"name": "reminder", "description": "备忘录增删查改"},
@@ -125,5 +126,6 @@ app.include_router(relation.router)
 app.include_router(activity.router)
 app.include_router(favorite.router)
 app.include_router(card.router)
+app.include_router(news.router)
 app.mount("/static", StaticFiles(directory="static"))
 app.mount("/", StaticFiles(directory="static"))
