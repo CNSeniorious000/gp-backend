@@ -1,52 +1,14 @@
 [![logo](/static/favicon.svg)](https://gp.muspimerol.site/)
 
-# 守护青松 Guard Pine `v0.3.3`
+# 守护青松 Guard Pine `v0.4.0`
 
 [![jwt compatible](https://jwt.io/img/badge-compatible.svg)](https://jwt.io/)
 
-## 接口上新计划
+## 免责声明
 
-- [x] 亲人信息
+我们部分借用了[养老网](https://www.yanglao.com.cn/)的数据，并暂未与其站长联系
 
-  ```json
-  [
-    {
-      "id": "用户标识码",
-      "name": "姓名",
-      "avatar": "头像url",
-      "relation": "选择父亲/母亲/儿子/女儿等",
-      "activities": [
-        {
-          "id": "活动标识码",
-          "name": "活动名称",
-          "description": "活动详情",
-          "situation": "待办/进行中/已完成/已取消"
-        }
-      ],
-      "favorites": [
-        {
-          "id": "收藏标识码",
-          "title": "内容标题",
-          "abstract": "内容摘要",
-          "timeStamp": "时间戳",
-          "source": "来源",
-          "url": "资源的链接"
-        }
-      ],
-      "notes": []
-    }
-  ]
-  ```
-
-- [ ] 添加提醒
-- [ ] 搜索收藏
-
-## **点击此链接可以触发服务器上对该仓库 git pull:** [refresh](https://www.muspimerol.site:9999/refresh)
-
-拉取后将重定向到主页。
-
-如果因为[主站域名](https://muspimerol.site:9999/)
-带端口号，不能正常访问，可以访问[CDN加速域名](https://gp.muspimerol.site/)。但这会给我带来额外的费用。
+但我们传了有标识性的 `user-agent` 和其它 `Header`
 
 ## 用户登录
 

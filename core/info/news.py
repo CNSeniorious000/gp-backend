@@ -1,12 +1,6 @@
-from fastapi import APIRouter, Path, Query, HTTPException
+from .common import router, get_html, get_id_reg
 from pydantic import BaseModel, Field
-from httpx import AsyncClient
-from bs4 import BeautifulSoup
-import re
-
-router = APIRouter(tags=["news"])
-client = AsyncClient(http2=True, base_url="https://www.yanglao.com.cn/")
-get_id_reg = re.compile(r"\d+")
+from fastapi import Path, Query
 
 
 class Article(BaseModel):
@@ -58,10 +52,8 @@ class ArticleDetails(BaseModel):
 async def get_articles(page: int | None = Query(1, description="分页（从1开始）", ge=1)) -> list[ArticleWithDate]:
     """### fetch new articles directly from the web"""
 
-    dom = BeautifulSoup((await client.get(f"/article_{page}")).text, "lxml")
+    dom = await get_html(f"/article_{page}")
     news_list = dom.select_one("ul.news-list")
-    if news_list is None:
-        raise HTTPException(404, "page not found")
     return [ArticleWithDate(
         article_id=int(get_id_reg.findall(li.a["href"])[0]), title=li.a.string, date=li.span.string
     ) for li in news_list.find_all("li")]
@@ -71,10 +63,8 @@ async def get_articles(page: int | None = Query(1, description="分页（从1开
 async def get_article_info(article_id: int = Path(alias="articleId", description="文章唯一标识")) -> ArticleDetails:
     """### get an article's details and its related articles"""
 
-    dom = BeautifulSoup((await client.get(f"/article/{article_id}.html")).text, "lxml")
+    dom = await get_html(f"/article/{article_id}.html")
     news_view = dom.select_one("div.news-view")
-    if news_view is None:
-        raise HTTPException(404, "article not found")
     li_source, li_hits, li_datetime = news_view.select("ul.info > li")[:3]
     return ArticleDetails(
         title=news_view.h1.string,

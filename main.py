@@ -14,25 +14,25 @@ from core.common.secret import host
 from core.common.auth import Bearer
 from core.user import relation
 from httpx import AsyncClient
-from core import card, news
+from core import card, info
 from os import system
 
 create_db_and_tables()
-app = FastAPI(title="守护青松 Guard Pine", version="0.3.3",
+app = FastAPI(title="守护青松 Guard Pine", version="0.4.0",
               license_info={"name": "MIT License", "url": "https://mit-license.org/"},
               contact={"name": "Muspi Merol", "url": "https://muspimerol.site/", "email": "admin@muspimerol.site"},
               openapi_tags=[
-                  {"name": "news", "description": "从[养老网](https://www.yanglao.com.cn/)获取到的文章"},
+                  {"name": "info", "description": "从[养老网](https://www.yanglao.com.cn/)获取到的文章"},
                   {"name": "dev", "description": "Develop tools, **will be removed in the future.**"},
                   {"name": "user", "description": "**User login** and more."},
                   {"name": "reminder", "description": "备忘录增删查改"},
                   {"name": "activity", "description": "活动增删查改"},
                   {"name": "favorite", "description": "收藏增删查改"},
                   {"name": "relation", "description": "关系增删查改"},
-                  {"name": "card", "description": "首页卡片 **fake news**"}
+                  {"name": "card", "description": "首页卡片 **fake info**"}
               ],
               # description=open("./readme.md", encoding="utf-8").read(),
-              description="### “守护青松”国家级大创项目 [部署地址](https://muspimerol.site:9999/)",
+              description="### “守护青松”国家级大创项目 [部署地址](http://39.108.75.135:9999/)",
               docs_url=None, redoc_url=None, default_response_class=ORJSONResponse)
 app.add_middleware(BrotliMiddleware, quality=11, minimum_size=256)
 
@@ -126,6 +126,6 @@ app.include_router(relation.router)
 app.include_router(activity.router)
 app.include_router(favorite.router)
 app.include_router(card.router)
-app.include_router(news.router)
+app.include_router(info.router)
 app.mount("/static", StaticFiles(directory="static"))
 app.mount("/", StaticFiles(directory="static"))
