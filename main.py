@@ -18,7 +18,7 @@ from core import card, info
 from os import system
 
 create_db_and_tables()
-app = FastAPI(title="守护青松 Guard Pine", version="0.4.2",
+app = FastAPI(title="守护青松 Guard Pine", version="0.4.3",
               license_info={"name": "MIT License", "url": "https://mit-license.org/"},
               contact={"name": "Muspi Merol", "url": "https://muspimerol.site/", "email": "admin@muspimerol.site"},
               openapi_tags=[
