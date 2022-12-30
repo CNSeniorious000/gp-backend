@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from ..common.auth import Bearer
 from ..common.sql import engine
-from functools import lru_cache
 from ..user.impl import ensure
 from autoprop import autoprop
 from enum import Enum
@@ -40,10 +39,6 @@ class ActivityItem(SQLModel, table=True):
 
 @autoprop
 class Activity:
-    @lru_cache(maxsize=100)
-    def __new__(cls, id):
-        return super().__new__(cls)
-
     def __init__(self, id):
         self.id = id
 
@@ -90,29 +85,29 @@ class Activity:
 @router.get("/activity", response_model=list[ActivityItem])
 def get_activities(bearer: Bearer = Depends(), user_id: str | None = Query(None, title="列出谁的活动", example="id")):
     """获取活动。获取亲友的活动暂时只能分别去获取"""
-    if user_id is not None:
-        bearer.ensure_been_permitted_by(ensure(user_id))
-    else:
+    if user_id is None:
         user_id = bearer.id
+    else:
+        bearer.ensure_been_permitted_by(ensure(user_id))
     with Session(engine) as session:
         return session.exec(select(ActivityItem).where(ActivityItem.user_id == user_id)).all()
 
 
 class ActivityPut(BaseModel):
-    name: str = Field(..., example="活动名称")
-    description: str = Field(..., example="活动描述")
-    situation: Progress
-    user_id: str | None = Field(None, example="用户openid", description="可以填有权限的联系人，不填则默认为自己")
+    name: str = Field(title="活动名称")
+    description: str = Field(title="活动描述")
+    situation: Progress = Field(Progress.todo, title="进度", description="待办/进行中/已完成/已取消")
+    user_id: str | None = Field(None, title="可以填有权限的联系人", description="不填则默认为自己")
 
 
 @router.put("/activity", response_model=ActivityItem)
 def add_activity(data: ActivityPut, bearer: Bearer = Depends()):
     creator = bearer.id
-    if data.user_id is not None:
-        user_id = data.user_id
-        bearer.ensure_been_permitted_by(user_id)
-    else:
+    if data.user_id is None:
         user_id = creator
+    else:
+        user_id = ensure(data.user_id)
+        bearer.ensure_been_permitted_by(user_id)
 
     with Session(engine) as session:
         session.add(item := ActivityItem(user_id=user_id,
@@ -126,23 +121,38 @@ def add_activity(data: ActivityPut, bearer: Bearer = Depends()):
         return item
 
 
-class ActivityPatch(ActivityPut):
-    """修改活动。暂时还只能号主修改自己的活动"""
-
-    id: int = Field(..., example="1")
+class ActivityPatch(BaseModel):
+    id: int = Field(example="1")
+    name: str | None = Field(example="not necessarily", title="活动名称", description="修改即填，非必须")
+    description: str | None = Field(example="not necessarily", title="活动描述", description="修改即填，非必须")
+    situation: Progress | None = Field(title="进度", description="一般只会修改这个属性")
+    user_id: str | None = Field(title="最好不要填吧", description="一般很少修改活动主体吧")
 
 
 @router.patch("/activity", response_model=ActivityItem)
 def update_activity(data: ActivityPatch, bearer: Bearer = Depends()):
-    user_id = bearer.id
+    """## 修改活动
+
+    每个活动修改时必须传一个`活动id`，除此之外可以传`PUT`时传的各种参数或者不传，传的话就能修改
+    """
+    if data.user_id is None:
+        user_id = bearer.id
+    else:
+        bearer.ensure_been_permitted_by(ensure(data.user_id))
+        user_id = data.user_id
     activity_id = data.id
     with Session(engine) as session:
         item = session.exec(select(ActivityItem).where(ActivityItem.id == activity_id)).one_or_none()
+        bearer.ensure_been_permitted_by(item.user_id)
         if item is None:
             raise HTTPException(404, f"activity {activity_id} does not exist")
         if item.user_id != user_id:
             raise HTTPException(401, f"activity {activity_id} does not belongs to {user_id}")
 
+        if data.name is not None:
+            item.name = data.name
+        if data.user_id is not None:
+            item.user_id = data.user_id
         if data.description is not None:
             item.description = data.description
         if data.situation is not None:
@@ -160,6 +170,8 @@ def remove_activity(activity_id: int, bearer: Bearer = Depends()):
     user_id = bearer.id
     with Session(engine) as session:
         activity = session.exec(select(ActivityItem).where(ActivityItem.id == activity_id)).one_or_none()
+        bearer.ensure_been_permitted_by(activity.user_id)
+
         if activity is None:
             raise HTTPException(404, f"activity {activity_id} does not exist")
 
@@ -169,6 +181,4 @@ def remove_activity(activity_id: int, bearer: Bearer = Depends()):
         else:
             raise HTTPException(401, f"activity {activity_id} does not belongs to {user_id}")
 
-    Activity.__new__.cache_clear()
-
-    return f"delete {activity_id} success"
+    return f"delete {activity_id} successfully"

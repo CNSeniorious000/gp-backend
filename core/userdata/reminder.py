@@ -46,8 +46,11 @@ class Reminder:
 
 
 @router.get("/reminder", response_model=list[ReminderItem])
-def get_reminders(bearer: Bearer = Depends()):
-    user_id = bearer.id
+def get_reminders(bearer: Bearer = Depends(), user_id: str = None):
+    if user_id is None:
+        user_id = bearer.id
+    else:
+        bearer.ensure_been_permitted_by(ensure(user_id))
     with Session(engine) as session:
         return session.exec(select(ReminderItem).where(ReminderItem.user_id == user_id)).all()
 

@@ -147,6 +147,8 @@ async def remove_permission(from_user_id: str = Depends(ensure), to_bearer: Bear
 
 @router.get("/test_permission", deprecated=True)
 def verify_permitted(from_user_id, to_user_id):
+    if from_user_id == to_user_id:
+        return True
     if from_user_id not in User(to_user_id).permissions:
         raise HTTPException(403, f"User({from_user_id}) don't have permission to view User({to_user_id})'s information")
     return True
