@@ -3,7 +3,6 @@ from starlette.exceptions import HTTPException
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from ..common.auth import Bearer
-from functools import lru_cache
 from ..common.sql import engine
 from ..user.impl import ensure
 from time import time
@@ -31,20 +30,6 @@ class ReminderItem(SQLModel, table=True):
         }}
 
 
-class Reminder:
-    @lru_cache(10)
-    def __new__(cls, id):
-        return super().__new__(cls)
-
-    def __init__(self, id):
-        self.id = id
-
-    @property
-    def item(self):
-        with Session(engine) as session:
-            return session.exec(select(ReminderItem).where(ReminderItem.id == self.id)).one()
-
-
 @router.get("/reminder", response_model=list[ReminderItem])
 def get_reminders(bearer: Bearer = Depends(), user_id: str = None):
     if user_id is None:
@@ -56,11 +41,12 @@ def get_reminders(bearer: Bearer = Depends(), user_id: str = None):
 
 
 class ReminderPut(BaseModel):
-    user_id: str | None = Field(None, example="用户openid", description="可以填有权限的联系人，若不填即默认自己")
-    content: str
-    creation_time: float | None = Field(default_factory=time, example=1664257424.4382992,
+    user_id: str | None = Field(title="用户openid", description="可以填有权限的联系人，若不填即默认自己")
+    content: str | None = Field(title="内容", description="也可以先创建空的以后再修改")
+    creation_time: float | None = Field(default_factory=time, example=1664257424.4382992, title="创建时间",
                                         description="创建时间，不填则用服务器时间")
-    notification_time: float | None = Field(None, example=1664258400.0, description="提醒时间，会出现在当日的备忘列表中")
+    notification_time: float | None = Field(None, example=1664258400.0, title="提醒时间",
+                                            description="会出现在当日的备忘列表中")
 
 
 @router.put("/reminder", response_model=ReminderItem)
@@ -86,22 +72,24 @@ def add_reminder(data: ReminderPut, bearer: Bearer = Depends()):
 
 class ReminderPatch(BaseModel):
     id: int
-    content: str
-    modification_time: float | None = Field(example=1664258283.3689516, default_factory=time,
-                                            description="修改时间，不填则用服务器时间")
-    notification_time: float | None = Field(None, example=1664258400.0, description="提醒时间，会出现在当日的备忘列表中")
+    content: str = Field(description="一般认为只有修改内容了才算修改，所以这项必填")
+    modification_time: float | None = Field(example=1664258283.3689516, default_factory=time, title="修改时间",
+                                            description="不填则用服务器时间")
+    notification_time: float | None = Field(None, example=1664258400.0, title="提醒时间",
+                                            description="会出现在当日的备忘列表中")
 
 
 @router.patch("/reminder", response_model=ReminderItem)
 def update_reminder(data: ReminderPatch, bearer: Bearer = Depends()):
-    item = Reminder(data.id).item
-    bearer.ensure_been_permitted_by(item.user_id)
-
-    item.content = data.content
-    item.modification_time = data.modification_time
-    item.notification_time = data.notification_time
-
     with Session(engine) as session:
+        item = session.exec(select(ReminderItem).where(ReminderItem.id == data.id)).one_or_none()
+        bearer.ensure_been_permitted_by(item.user_id)
+
+        item.content = data.content
+        item.modification_time = data.modification_time
+        if data.notification_time is not None:
+            item.notification_time = data.notification_time
+
         session.add(item)
         session.commit()
         session.refresh(item)
@@ -117,10 +105,10 @@ def remove_reminder(reminder_id: int, bearer: Bearer = Depends()):
         if reminder is None:
             raise HTTPException(404, f"reminder {reminder_id} does not exist")
 
-        if user_id in [reminder.user_id, reminder.creator]:  # TODO: 这里应该改成有权限修改即可
+        if bearer.ensure_been_permitted_by(reminder_id):
             session.delete(reminder)
             session.commit()
         else:
-            raise HTTPException(401, f"reminder {reminder_id} is beyond {user_id}'s scope")
+            raise HTTPException(401, f"reminder {reminder_id} is beyond {user_id}'s permitted scope")
 
     return f"delete {reminder_id} success"

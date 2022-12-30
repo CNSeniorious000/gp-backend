@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field
 from ..common.auth import Bearer
 from ..common.sql import engine
 from ..user.impl import ensure
-from autoprop import autoprop
 from enum import Enum
 
 router = APIRouter(tags=["activity"])
@@ -35,51 +34,6 @@ class ActivityItem(SQLModel, table=True):
             "description": "这是一个活动",
             "situation": Progress.doing
         }}
-
-
-@autoprop
-class Activity:
-    def __init__(self, id):
-        self.id = id
-
-    @property
-    def item(self):
-        with Session(engine) as session:
-            return session.exec(select(ActivityItem).where(ActivityItem.id == self.id)).one()
-
-    def get_user(self):
-        from ..user.impl import User
-        return User(self.item.user_id)
-
-    def get_name(self):
-        return self.item.name
-
-    def get_description(self):
-        return self.item.description
-
-    def get_situation(self):
-        return self.item.situation
-
-    def set_name(self, name: str):
-        with Session(engine) as session:
-            self.item.name = name
-            session.add(self.item)
-            session.commit()
-            session.refresh(self.item)
-
-    def set_description(self, description: str):
-        with Session(engine) as session:
-            self.item.description = description
-            session.add(self.item)
-            session.commit()
-            session.refresh(self.item)
-
-    def set_situation(self, situation: Progress):
-        with Session(engine) as session:
-            self.item.situation = situation
-            session.add(self.item)
-            session.commit()
-            session.refresh(self.item)
 
 
 @router.get("/activity", response_model=list[ActivityItem])
