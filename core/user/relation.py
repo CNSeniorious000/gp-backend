@@ -57,7 +57,7 @@ class RelativeRes(RelativePost):
 
 
 @router.get("/relative", response_model=list[RelativeRes])
-async def get_relatives(id: str | None = None, bearer: Bearer = Depends()):
+async def get_relatives(id: str = None, bearer: Bearer = Depends()):
     from_user_id = bearer.id if id is None else ensure(id)
     bearer.ensure_been_permitted_by(from_user_id)
     with Session(engine) as session:
@@ -70,6 +70,21 @@ async def get_relatives(id: str | None = None, bearer: Bearer = Depends()):
                 "id": item.id
             }
             for item in session.exec(select(RelationItem).where(RelationItem.from_user_id == from_user_id))
+        ]
+
+
+@router.get("/refs", response_model=list[RelativeRes])
+async def get_ones_references(id: str = None, bearer: Bearer = Depends()):
+    """## Get one's references by whoever else
+
+    查看有谁设我为亲属，返回亲属名、授权等实用信息
+    """
+    to_user_id = bearer.id if id is None else ensure(id)
+    bearer.ensure_been_permitted_by(to_user_id)
+    with Session(engine) as session:
+        return [
+            RelativeRes(**item.dict(), permitted=item.permitted)
+            for item in session.exec(select(RelationItem).where(RelationItem.to_user_id == to_user_id))
         ]
 
 
