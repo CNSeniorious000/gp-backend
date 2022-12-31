@@ -105,10 +105,8 @@ def remove_reminder(reminder_id: int, bearer: Bearer = Depends()):
         if reminder is None:
             raise HTTPException(404, f"reminder {reminder_id} does not exist")
 
-        if bearer.ensure_been_permitted_by(reminder_id):
-            session.delete(reminder)
-            session.commit()
-        else:
-            raise HTTPException(401, f"reminder {reminder_id} is beyond {user_id}'s permitted scope")
+        bearer.ensure_been_permitted_by(reminder.user_id)
+        session.delete(reminder)
+        session.commit()
 
-    return f"delete {reminder_id} success"
+    return f"delete {reminder_id} successfully"
