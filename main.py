@@ -18,7 +18,7 @@ from core import card, info
 from os import system
 
 create_db_and_tables()
-app = FastAPI(title="守护青松 Guard Pine", version="0.4.4.1",
+app = FastAPI(title="守护青松 Guard Pine", version="0.4.5",
               license_info={"name": "MIT License", "url": "https://mit-license.org/"},
               contact={"name": "Muspi Merol", "url": "https://muspimerol.site/", "email": "admin@muspimerol.site"},
               openapi_tags=[
@@ -34,7 +34,7 @@ app = FastAPI(title="守护青松 Guard Pine", version="0.4.4.1",
               # description=open("./readme.md", encoding="utf-8").read(),
               description="### “守护青松”国家级大创项目 [部署地址](http://39.108.75.135:9999/)",
               docs_url=None, redoc_url=None, default_response_class=ORJSONResponse)
-app.add_middleware(BrotliMiddleware, quality=11, minimum_size=256)
+app.add_middleware(BrotliMiddleware, quality=6, minimum_size=256)
 
 
 @app.middleware("http")
