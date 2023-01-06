@@ -99,7 +99,6 @@ def update_reminder(data: ReminderPatch, bearer: Bearer = Depends()):
 
 @router.delete("/reminder", response_model=str)
 def remove_reminder(reminder_id: int, bearer: Bearer = Depends()):
-    user_id = bearer.id
     with Session(engine) as session:
         reminder = session.exec(select(ReminderItem).where(ReminderItem.id == reminder_id)).one_or_none()
         if reminder is None:

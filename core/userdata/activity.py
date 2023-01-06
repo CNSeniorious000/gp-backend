@@ -124,15 +124,12 @@ def remove_activity(activity_id: int, bearer: Bearer = Depends()):
     user_id = bearer.id
     with Session(engine) as session:
         activity = session.exec(select(ActivityItem).where(ActivityItem.id == activity_id)).one_or_none()
-        bearer.ensure_been_permitted_by(activity.user_id)
-
         if activity is None:
             raise HTTPException(404, f"activity {activity_id} does not exist")
 
-        if user_id == activity.user_id:
-            session.delete(activity)
-            session.commit()
-        else:
-            raise HTTPException(401, f"activity {activity_id} does not belongs to {user_id}")
+        bearer.ensure_been_permitted_by(activity.user_id)
+
+        session.delete(activity)
+        session.commit()
 
     return f"delete {activity_id} successfully"

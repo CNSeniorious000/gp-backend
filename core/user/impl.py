@@ -1,4 +1,4 @@
-from ..common.secret import app_secret_0 as sk_0, app_secret_1 as sk_1, pool
+from ..common.secret import app_secret_1 as sk_1, pool
 from sqlmodel import SQLModel, Field, Session, select, or_
 from starlette.responses import PlainTextResponse
 from starlette.exceptions import HTTPException
@@ -218,7 +218,7 @@ async def erase(bearer: Bearer = Depends()):
         return PlainTextResponse(f"user {id} doesn't exist", 404)
 
     from .relation import RelationItem
-    from ..userdata.favorite import FavoriteItem
+    from core.info.favorite import FavoriteItem
     from ..userdata.activity import ActivityItem, Activity
 
     with Session(engine) as session:
