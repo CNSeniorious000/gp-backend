@@ -25,6 +25,8 @@ class ActivityItem(SQLModel, table=True):
     name: str
     description: str
     situation: Progress
+    start_time: int = DbField(alias="startTime")
+    end_time: int = DbField(alias="endTime")
 
     class Config:
         schema_extra = {"example": {
@@ -32,11 +34,13 @@ class ActivityItem(SQLModel, table=True):
             "user_id": "id",
             "name": "活动名",
             "description": "这是一个活动",
-            "situation": Progress.doing
+            "situation": Progress.doing,
+            "startTime": 1672981085,
+            "endTime": 1672981100
         }}
 
 
-@router.get("/activity", response_model=list[ActivityItem])
+@router.get("/activity")
 def get_activities(bearer: Bearer = Depends(), user_id: str | None = Query(None, title="列出谁的活动", example="id")):
     """获取活动。获取亲友的活动暂时只能分别去获取"""
     if user_id is None:
@@ -52,9 +56,11 @@ class ActivityPut(BaseModel):
     description: str = Field(title="活动描述")
     situation: Progress = Field(Progress.todo, title="进度", description="待办/进行中/已完成/已取消")
     user_id: str | None = Field(None, title="可以填有权限的联系人", description="不填则默认为自己")
+    start_time: int = Field(alias="startTime")
+    end_time: int = Field(alias="endTime")
 
 
-@router.put("/activity", response_model=ActivityItem)
+@router.put("/activity")
 def add_activity(data: ActivityPut, bearer: Bearer = Depends()):
     creator = bearer.id
     if data.user_id is None:
@@ -64,11 +70,10 @@ def add_activity(data: ActivityPut, bearer: Bearer = Depends()):
         bearer.ensure_been_permitted_by(user_id)
 
     with Session(engine) as session:
-        session.add(item := ActivityItem(user_id=user_id,
-                                         creator=creator,
-                                         name=data.name,
-                                         description=data.description,
-                                         situation=data.situation))
+        data_dict: dict = data.dict()
+        data_dict["startTime"] = data_dict.pop("start_time")
+        data_dict["endTime"] = data_dict.pop("end_time")
+        session.add(item := ActivityItem(creator=creator, **data_dict))
         session.commit()
         session.refresh(item)
 
@@ -81,9 +86,11 @@ class ActivityPatch(BaseModel):
     description: str | None = Field(example="not necessarily", title="活动描述", description="修改即填，非必须")
     situation: Progress | None = Field(title="进度", description="一般只会修改这个属性")
     user_id: str | None = Field(title="最好不要填吧", description="一般很少修改活动主体吧")
+    start_time: int | None = Field(alias="startTime")
+    end_time: int | None = Field(alias="endTime")
 
 
-@router.patch("/activity", response_model=ActivityItem)
+@router.patch("/activity")
 def update_activity(data: ActivityPatch, bearer: Bearer = Depends()):
     """## 修改活动
 
@@ -100,8 +107,6 @@ def update_activity(data: ActivityPatch, bearer: Bearer = Depends()):
         bearer.ensure_been_permitted_by(item.user_id)
         if item is None:
             raise HTTPException(404, f"activity {activity_id} does not exist")
-        if item.user_id != user_id:
-            raise HTTPException(401, f"activity {activity_id} does not belongs to {user_id}")
 
         if data.name is not None:
             item.name = data.name
@@ -110,7 +115,11 @@ def update_activity(data: ActivityPatch, bearer: Bearer = Depends()):
         if data.description is not None:
             item.description = data.description
         if data.situation is not None:
-            item.situation = data.situation  # if no ".value" will fail this update
+            item.situation = data.situation
+        if data.start_time is not None:
+            item.start_time = data.start_time
+        if data.end_time is not None:
+            item.end_time = data.end_time
 
         session.add(item)
         session.commit()
