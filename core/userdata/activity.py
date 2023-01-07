@@ -2,6 +2,7 @@ from sqlmodel import SQLModel, Field as DbField, select, Session
 from starlette.exceptions import HTTPException
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
+from datetime import datetime, tzinfo
 from ..common.auth import Bearer
 from ..common.sql import engine
 from ..user.impl import ensure
@@ -25,8 +26,8 @@ class ActivityItem(SQLModel, table=True):
     name: str
     description: str
     situation: Progress
-    start_time: int = DbField(alias="startTime")
-    end_time: int = DbField(alias="endTime")
+    start_time: datetime = DbField(alias="startTime")
+    end_time: datetime = DbField(alias="endTime")
 
     class Config:
         schema_extra = {"example": {
@@ -56,8 +57,9 @@ class ActivityPut(BaseModel):
     description: str = Field(title="活动描述")
     situation: Progress = Field(Progress.todo, title="进度", description="待办/进行中/已完成/已取消")
     user_id: str | None = Field(None, title="可以填有权限的联系人", description="不填则默认为自己")
-    start_time: int = Field(alias="startTime")
-    end_time: int = Field(alias="endTime")
+    start_time: datetime = Field(alias="startTime",
+                                 default_factory=lambda: datetime.utcnow().replace(tzinfo=timezone.utc))
+    end_time: datetime = Field(alias="endTime", default_factory=lambda: datetime.utcnow().replace(tzinfo=timezone.utc))
 
 
 @router.put("/activity")
@@ -86,8 +88,8 @@ class ActivityPatch(BaseModel):
     description: str | None = Field(example="not necessarily", title="活动描述", description="修改即填，非必须")
     situation: Progress | None = Field(title="进度", description="一般只会修改这个属性")
     user_id: str | None = Field(title="最好不要填吧", description="一般很少修改活动主体吧")
-    start_time: int | None = Field(alias="startTime")
-    end_time: int | None = Field(alias="endTime")
+    start_time: datetime | None = Field(alias="startTime")
+    end_time: datetime | None = Field(alias="endTime")
 
 
 @router.patch("/activity")
@@ -142,3 +144,8 @@ def remove_activity(activity_id: int, bearer: Bearer = Depends()):
         session.commit()
 
     return f"delete {activity_id} successfully"
+
+
+from ..common.sql import create_db_and_tables
+
+create_db_and_tables()
