@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, Field as DbField, select, Session
 from starlette.exceptions import HTTPException
 from fastapi import APIRouter, Depends, Query
-from datetime import datetime, timezone
+from datetime import datetime
 from pydantic import BaseModel, Field
 from ..common.auth import Bearer
 from ..common.sql import engine
