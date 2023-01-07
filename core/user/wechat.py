@@ -1,5 +1,4 @@
-from ..common.secret import app_id_0 as ak_0, app_id_1 as ak_1
-from enum import Enum
+from ..common.secret import app_id_0 as ak_0, app_id_1 as ak_1, app_secret_0 as sk_0
 from .impl import *
 
 openid_cache = Redis(connection_pool=pool, db=1)
