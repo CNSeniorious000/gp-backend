@@ -218,14 +218,14 @@ async def erase(bearer: Bearer = Depends()):
         return PlainTextResponse(f"user {id} doesn't exist", 404)
 
     from .relation import RelationItem
-    from core.info.favorite import FavoriteItem
-    from ..userdata.activity import ActivityItem, Activity
+    from core.userdata.favorite import FavoriteItem
+    from ..userdata.activity import ActivityItem
 
     with Session(engine) as session:
         for item in chain(
-                session.exec(select(RelationItem).where(or_(
-                    RelationItem.from_user_id == id, RelationItem.to_user_id == id
-                ))),
+                session.exec(select(RelationItem).where(
+                    or_(RelationItem.from_user_id == id, RelationItem.to_user_id == id)
+                )),
                 session.exec(select(FavoriteItem).where(FavoriteItem.user_id == id)),
                 session.exec(select(ActivityItem).where(ActivityItem.user_id == id))
         ):
@@ -233,9 +233,6 @@ async def erase(bearer: Bearer = Depends()):
         session.commit()
         session.delete(User(id).item)
         session.commit()
-
-    User.__new__.cache_clear()
-    Activity.__new__.cache_clear()
 
     return not exist(id)
 
@@ -257,7 +254,7 @@ async def set_avatar(url: str, bearer: Bearer = Depends()):
 
 
 @router.get("/name/{id}")
-async def get_name(id: str):
+async def get_name(id: str = Depends(ensure)):
     """获取用户昵称"""
     try:
         return User(id)["name"]

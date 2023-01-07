@@ -1,7 +1,6 @@
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from starlette.responses import RedirectResponse, HTMLResponse
-from core.userdata import activity, reminder
-from core.info import favorite
+from core.userdata import activity, reminder, favorite
 from core.common.sql import create_db_and_tables
 from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
@@ -19,7 +18,10 @@ from core import card, info
 from os import system
 
 create_db_and_tables()
-app = FastAPI(title="守护青松 Guard Pine", version="0.4.7.3",
+
+version = "0.4.8"
+
+app = FastAPI(title="守护青松 Guard Pine", version=version,
               license_info={"name": "MIT License", "url": "https://mit-license.org/"},
               contact={"name": "Muspi Merol", "url": "https://muspimerol.site/", "email": "admin@muspimerol.site"},
               openapi_tags=[
@@ -53,12 +55,8 @@ templates = Jinja2Templates("static")
 
 
 @app.get("/me", tags=["dev"])
-async def read_me(bearer: Bearer = Depends()):
-    return {
-        "id": bearer.id,
-        "permissions": bearer.user.permissions,
-        "meta": bearer.user.meta
-    }
+async def who_am_i(bearer: Bearer = Depends()):
+    return {"id": bearer.id, "permissions": bearer.user.permissions, "meta": bearer.user.meta}
 
 
 @app.get("/", include_in_schema=False)
@@ -69,6 +67,7 @@ async def index_page(request: Request):
         "home.html",
         {
             "request": request,
+            "version": version,
             "count": count,
         }
     )

@@ -59,7 +59,7 @@ def add_reminder(data: ReminderPut, bearer: Bearer = Depends()):
     if data.user_id is None:
         user_id = creator
     else:
-        user_id = data.user_id
+        user_id = ensure(data.user_id)
         bearer.ensure_been_permitted_by(user_id)
 
     with Session(engine) as session:
@@ -87,7 +87,7 @@ class ReminderPatch(BaseModel):
 def update_reminder(data: ReminderPatch, bearer: Bearer = Depends()):
     with Session(engine) as session:
         item = session.exec(select(ReminderItem).where(ReminderItem.id == data.id)).one_or_none()
-        bearer.ensure_been_permitted_by(item.user_id)
+        bearer.ensure_been_permitted_by(ensure(item.user_id))
 
         item.content = data.content
         item.modification_time = data.modification_time

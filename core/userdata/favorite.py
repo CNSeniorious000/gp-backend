@@ -1,13 +1,14 @@
-from .news import router, get_article_info, ArticleDetails
+from ..info.news import get_article_info, ArticleDetails
 from sqlmodel import SQLModel, Field, select, Session
 from starlette.exceptions import HTTPException
-from ..common.auth import Bearer
+from datetime import datetime, timezone
+from fastapi import Depends, APIRouter
+from core.common.auth import Bearer
 from urllib.parse import urljoin
-from cachetools import TTLCache
-from ..common.sql import engine
+from core.common.sql import engine
 from pydantic import BaseModel
-from fastapi import Depends
-from time import time
+
+router = APIRouter(tags=["favorite"])
 
 
 @router.get("/parse", deprecated=True)
@@ -16,7 +17,7 @@ async def get_meta(url):
 
     以前准备用来解析任意url的接口，现在作废了~
     """
-    from .common import get_html
+    from ..info.common import get_html
 
     html = await get_html(url)
     result = {}
@@ -57,7 +58,7 @@ class FavoriteItem(SQLModel, table=True):
     __tablename__ = "favorites"
     id: int | None = Field(default=None, primary_key=True)
     user_id: str = Field(foreign_key="users.id")
-    time_stamp: int = Field(default_factory=time)
+    time_stamp: datetime = Field(default_factory=lambda: datetime.utcnow().replace(tzinfo=timezone.utc))
     article_id: int = Field(title="文章唯一标识")
 
 

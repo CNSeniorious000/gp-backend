@@ -2,8 +2,15 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title> 守护青松 </title>
-    <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime/mini.global.js"></script>
+    <title> 守护青松 v{{ version }} </title>
+    <script defer src="https://cdn.jsdelivr.net/npm/@unocss/runtime/mini.global.js"></script>
+    <link rel="prefetch" href="/openapi.json" as="object">
+    <link rel="prefetch" href="/redoc" as="document">
+    <link rel="prefetch" href="/docs" as="document">
+    <link rel="prefetch" href="/static/swagger-ui.css" as="style">
+    <link rel="prefetch" href="/static/swagger-ui-bundle.js" as="script">
+    <link rel="prefetch" href="/static/redoc.standalone.js" as="script">
+    <link rel="prefetch" href="/static/swagger-ui-bundle.js" as="script">
 </head>
 <body class="bg-warm-gray-200 dark:bg-warm-gray-900">
 <div class="grid place-content-center h-90vh select-none">
@@ -15,15 +22,26 @@
                     {{ count }}
                 </h1>
             </div>
-            <div class="flex flex-col self-center gap-3 text-left text-lg lg:text-xl lg:gap-4 transition-all min-w-20vw">
-                <a class="transition-all no-underline text-warm-gray-600 hover:text-orange-400 font-bold" href="/docs">
-                    Swagger 文档 </a>
+            <div class="flex flex-col self-center gap-2 text-left text-lg lg:text-xl lg:gap-3 transition-all min-w-20vw">
+                <div class="mb-2">
+                    <h1 class="text-2xl text-warm-gray-700 m-0">
+                        守护青松 <span class="opacity-60 rounded px-2 py-1 bg-warm-gray-200 text-lg">v{{ version }}</span>
+                    </h1>
+                    <h2 class="text-base font-light text-warm-gray-600 m-0"> GUARD PINE </h2>
+                </div>
                 <hr class="border-t-1 border-b-0 border-l-0 border-r-0 border-opacity-30 m-0 border-orange-500">
-                <a class="transition-all no-underline text-warm-gray-600 hover:text-orange-400" href="/redoc"> ReDoc
-                    文档 </a>
+                <a class="transition-all no-underline text-warm-gray-600 hover:text-orange-400 font-bold" href="/docs">
+                    Swagger 文档
+                </a>
+                <hr class="border-t-1 border-b-0 border-l-0 border-r-0 border-opacity-30 m-0 border-orange-500">
+                <a class="transition-all no-underline text-warm-gray-600 hover:text-orange-400" href="/redoc">
+                  ReDoc 文档
+                </a>
                 <hr class="border-t-1 border-b-0 border-l-0 border-r-0 border-opacity-30 m-0 border-orange-500">
                 <a class="transition-all no-underline text-warm-gray-600 hover:text-orange-400"
-                   href="https://jihulab.com/CNSeniorious000/gp-backend"> 本站开源仓库 </a>
+                   href="https://jihulab.com/CNSeniorious000/gp-backend">
+                    本站开源仓库
+                </a>
             </div>
         </div>
     </div>

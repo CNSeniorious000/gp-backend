@@ -52,17 +52,13 @@ def get_activities(bearer: Bearer = Depends(), user_id: str | None = Query(None,
         return session.exec(select(ActivityItem).where(ActivityItem.user_id == user_id)).all()
 
 
-def get_current_datetime_utc():
-    return datetime.utcnow().replace(tzinfo=timezone.utc)
-
-
 class ActivityPut(BaseModel):
     name: str = Field(title="活动名称")
     description: str = Field(title="活动描述")
     situation: Progress = Field(Progress.todo, title="进度", description="待办/进行中/已完成/已取消")
     user_id: str | None = Field(None, title="可以填有权限的联系人", description="不填则默认为自己")
-    start_time: datetime = Field(alias="startTime", default_factory=get_current_datetime_utc)
-    end_time: datetime = Field(alias="endTime", default_factory=get_current_datetime_utc)
+    start_time: datetime = Field(alias="startTime")
+    end_time: datetime = Field(alias="endTime")
 
 
 @router.put("/activity")
