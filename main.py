@@ -19,7 +19,7 @@ from os import system
 
 create_db_and_tables()
 
-version = "0.4.8"
+version = "0.4.8.1"
 
 app = FastAPI(title="守护青松 Guard Pine", version=version,
               license_info={"name": "MIT License", "url": "https://mit-license.org/"},
@@ -86,16 +86,6 @@ client = AsyncClient(http2=True)
 async def get_iframe(url, title=None) -> bytes:
     # noinspection HttpUrlsUsage
     return (await client.get(f"http://{host}/link", params={"url": url, "title": title})).content
-
-
-@app.get("/notes", response_class=HTMLResponse, include_in_schema=False)
-async def get_notes():
-    return await get_iframe("https://www.craft.do/s/bbKnMXuNDudwop", "守护青松 - 开发者说")
-
-
-@app.get("/apifox", response_class=HTMLResponse, include_in_schema=False)
-async def get_apidoc():
-    return await get_iframe("https://www.apifox.cn/apidoc/project-1338127", "守护青松 - 接口文档")
 
 
 @app.get("/docs", include_in_schema=False)

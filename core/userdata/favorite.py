@@ -64,7 +64,7 @@ class FavoriteItem(SQLModel, table=True):
 
 class FavoriteResponse(BaseModel):
     id: int
-    timeStamp: int
+    timeStamp: datetime
     articleId: int
     details: ArticleDetails
 
