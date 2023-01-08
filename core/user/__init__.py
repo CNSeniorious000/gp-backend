@@ -13,7 +13,7 @@ async def get_md5_hash(string: str):
 @dev_router.get("/test_verify_jwt", deprecated=True)
 async def decode(token: str):
     try:
-        return jwt.decode(token, sk, "HS256")
+        return jwt.decode(token, sk_1, "HS256")
     except jwt.InvalidSignatureError:
         return PlainTextResponse(status_code=403)
     except jwt.DecodeError:

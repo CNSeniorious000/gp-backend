@@ -1,6 +1,6 @@
-from ..common.secret import app_secret_1 as sk_1, pool
 from sqlmodel import SQLModel, Field, Session, select, or_
 from starlette.responses import PlainTextResponse
+from ..common.secret import app_secret_1 as sk_1
 from starlette.exceptions import HTTPException
 from fastapi.responses import ORJSONResponse
 from sqlalchemy.exc import NoResultFound
@@ -15,13 +15,11 @@ from itertools import chain
 from ..common.sql import *
 from fastapi import Form
 from hashlib import md5
-from redis import Redis
 import jwt
 
 router = APIRouter(tags=["user"])
 
 client = AsyncClient(http2=True)
-openid_cache = Redis(connection_pool=pool, db=1)
 
 
 def md5_hash(string: str) -> bytes:
@@ -69,10 +67,6 @@ class PwdChecker:
 class User:
     pwd = PwdChecker()
 
-    @lru_cache(maxsize=1000)
-    def __new__(cls, id):
-        return super().__new__(cls)
-
     def __init__(self, id):
         self.id = id
 
@@ -102,6 +96,9 @@ class User:
 
     def __repr__(self):
         return f"User({self.id})"
+
+    def __str__(self):
+        return f"User<{self['name'] or self.id}>"
 
 
 def ensure(user_id: str):
@@ -150,7 +147,7 @@ def verify_permitted(from_user_id, to_user_id):
     if from_user_id == to_user_id:
         return True
     if from_user_id not in User(to_user_id).permissions:
-        raise HTTPException(403, f"User({from_user_id}) don't have permission to view User({to_user_id})'s information")
+        raise HTTPException(403, f"{User(from_user_id)} don't have permission to view {User(to_user_id)}'s information")
     return True
 
 
@@ -184,7 +181,7 @@ async def register(data: UserPut):
         session.commit()
         session.refresh(user)  # maybe redundant
 
-    return ORJSONResponse({"id": user.id, "hex": user.pwd_hash.hex()}, 201)
+    return ORJSONResponse({"id": user.id}, 201)
 
 
 @router.post("/user")
@@ -256,7 +253,7 @@ async def set_avatar(url: str, bearer: Bearer = Depends()):
 
 
 @router.get("/name/{id}")
-async def get_name(id: str = Depends(ensure)):
+async def get_name(id: str):
     """获取用户昵称"""
     try:
         return User(id)["name"]

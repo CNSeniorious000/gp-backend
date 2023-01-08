@@ -1,8 +1,11 @@
-from random import randrange
 from .impl import *
 from sqlmodel import Field as DbField
+from ..common.secret import pool
+from random import randrange
 from pydantic import Field
+from redis import Redis
 
+match_cache = Redis(connection_pool=pool, db=2)
 router = APIRouter(tags=["relation"])
 
 
@@ -121,9 +124,6 @@ async def delete_relative(id: int, bearer: Bearer = Depends()):
         session.commit()
 
     return f"delete {id} successfully"
-
-
-match_cache = Redis(connection_pool=pool, db=2)
 
 
 @router.post("/match", response_model=str, response_class=PlainTextResponse)
