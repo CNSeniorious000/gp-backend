@@ -19,7 +19,7 @@ from os import system
 
 create_db_and_tables()
 
-version = "0.4.8.2"
+version = "0.4.8.3"
 
 app = FastAPI(title="守护青松 Guard Pine", version=version,
               license_info={"name": "MIT License", "url": "https://mit-license.org/"},

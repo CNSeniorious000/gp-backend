@@ -67,7 +67,14 @@ class FavoriteResponse(BaseModel):
     id: int
     timeStamp: datetime
     articleId: int
-    details: ArticleDetails
+    details: ArticleDetails | None
+
+
+async def get_article_details(article_id: int) -> ArticleDetails | None:
+    try:
+        return await get_article_info(article_id)
+    except HTTPException:
+        return None
 
 
 @router.get("/favorite", response_model=list[FavoriteResponse])
@@ -84,7 +91,7 @@ async def get_favorites(bearer: Bearer = Depends(), user_id: str = None):
                 "id": item.id,
                 "timeStamp": item.time_stamp,
                 "articleId": item.article_id,
-                "details": await get_article_info(article_id=item.article_id)
+                "details": await get_article_details(article_id=item.article_id)
             }
             for item in session.exec(select(FavoriteItem).where(FavoriteItem.user_id == owner))
         ]

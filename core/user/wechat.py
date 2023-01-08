@@ -1,8 +1,6 @@
 from ..common.secret import app_id_0 as ak_0, app_id_1 as ak_1, app_secret_0 as sk_0
 from .impl import *
 
-openid_cache = Redis(connection_pool=pool, db=1)
-
 
 @router.get("/openid", response_class=PlainTextResponse,
             responses={400: {"description": "js_code无效"},
@@ -18,31 +16,27 @@ async def get_openid(code: str, is_elder: bool):
     - 通过 wx.login 接口获得临时登录凭证 code
     > 小程序登录流程见 <https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/login.html>
     """
-    try:
-        return openid_cache[code]
-    except KeyError:
-        response: dict = (await client.get(
-            "https://api.weixin.qq.com/sns/jscode2session", params=dict(
-                appid=ak_1 if is_elder else ak_0, secret=sk_1 if is_elder else sk_0,
-                js_code=code, grant_type="authorization_code"
-            ))).json()
-        if (openid := response.get("openid")) is not None:
-            openid_cache.set(code, openid, 120)
-            return openid
-        else:
-            match response["errcode"]:
-                case 40029:
-                    raise HTTPException(400, "js_code无效")
-                case 45011:
-                    raise HTTPException(429, "API调用太频繁，请稍候再试")
-                case 40163:
-                    raise HTTPException(410, "code been used")
-                case 40226:
-                    raise HTTPException(451, "高风险等级用户，小程序登录拦截。风险等级详见"
-                                             "[用户安全解方案](https://developers.weixin.qq.com/"
-                                             "miniprogram/dev/framework/operation.html")
-                case -1:
-                    raise HTTPException(500, "微信接口繁忙，此时请开发者稍候再试")
+    response: dict = (await client.get(
+        "https://api.weixin.qq.com/sns/jscode2session", params=dict(
+            appid=ak_1 if is_elder else ak_0, secret=sk_1 if is_elder else sk_0,
+            js_code=code, grant_type="authorization_code"
+        ))).json()
+    if (openid := response.get("openid")) is not None:
+        return openid
+    else:
+        match response["errcode"]:
+            case 40029:
+                raise HTTPException(400, "js_code无效")
+            case 45011:
+                raise HTTPException(429, "API调用太频繁，请稍候再试")
+            case 40163:
+                raise HTTPException(410, "code been used")
+            case 40226:
+                raise HTTPException(451, "高风险等级用户，小程序登录拦截。风险等级详见"
+                                         "[用户安全解方案](https://developers.weixin.qq.com/"
+                                         "miniprogram/dev/framework/operation.html")
+            case -1:
+                raise HTTPException(500, "微信接口繁忙，此时请开发者稍候再试")
 
 
 @router.get("/wechat/user")
