@@ -46,8 +46,8 @@ async def get_openid(code: str, is_elder: bool):
 
 
 @router.get("/wechat/user")
-async def wechat_exist(code):
-    return exist(await get_openid(code))
+async def wechat_exist(code, is_elder: bool):
+    return exist(await get_openid(code, is_elder))
 
 
 @router.post("/wechat/user")

@@ -3,9 +3,10 @@ from sqlmodel import SQLModel, Field, select, Session
 from starlette.exceptions import HTTPException
 from datetime import datetime, timezone
 from fastapi import Depends, APIRouter
-from core.common.auth import Bearer
+from ..common.auth import Bearer
 from urllib.parse import urljoin
-from core.common.sql import engine
+from ..common.sql import engine
+from ..user.impl import ensure
 from pydantic import BaseModel
 
 router = APIRouter(tags=["favorite"])
@@ -71,8 +72,11 @@ class FavoriteResponse(BaseModel):
 
 @router.get("/favorite", response_model=list[FavoriteResponse])
 async def get_favorites(bearer: Bearer = Depends(), user_id: str = None):
-    owner = user_id or bearer.id
-    bearer.ensure_been_permitted_by(owner)
+    if user_id is None:
+        owner = bearer.id
+    else:
+        owner = ensure(user_id)
+        bearer.ensure_been_permitted_by(owner)
 
     with Session(engine) as session:
         return [
@@ -93,8 +97,12 @@ class FavoriteForm(BaseModel):
 
 @router.post("/favorite", response_model=FavoriteItem)
 def add_favorite(data: FavoriteForm, bearer: Bearer = Depends()):
-    owner = data.user_id or bearer.id
-    bearer.ensure_been_permitted_by(owner)
+    if data.user_id is None:
+        owner = bearer.id
+    else:
+        owner = ensure(data.user_id)
+        bearer.ensure_been_permitted_by(owner)
+
     with Session(engine) as session:
         session.add(item := FavoriteItem(user_id=owner, article_id=data.article_id))
         session.commit()
