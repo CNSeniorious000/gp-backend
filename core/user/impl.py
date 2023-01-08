@@ -194,8 +194,10 @@ async def login(id: str = Form(), pwd: str = Form()):
 
     user = User(id)
     if user.pwd == pwd:
-        token = f"Bearer {jwt.encode({'scope': 'user', 'id': id}, sk_1, 'HS256')}"
-        response = ORJSONResponse({"token": token, "bio": user["bio"], "name": user["name"], "avatar": user["avatar"]})
+        token = f"Bearer {jwt.encode({'id': id}, sk_1, 'HS256')}"
+        response = ORJSONResponse({
+            "token": token, "bio": user["bio"], "name": user["name"], "avatar": user["avatar"], "id": id
+        })
         response.set_cookie("token", token)
         return response
     else:

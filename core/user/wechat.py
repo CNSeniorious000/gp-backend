@@ -2,7 +2,7 @@ from ..common.secret import app_id_0 as ak_0, app_id_1 as ak_1, app_secret_0 as 
 from .impl import *
 
 
-@router.get("/openid", response_class=PlainTextResponse,
+@router.get("/openid", response_class=PlainTextResponse, deprecated=True,
             responses={400: {"description": "js_code无效"},
                        429: {"description": "API调用太频繁，请稍候再试"},
                        410: {"description": "code been used"},
