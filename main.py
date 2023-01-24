@@ -19,7 +19,7 @@ from os import system
 
 create_db_and_tables()
 
-version = "0.4.10"
+version = "0.4.11"
 
 app = FastAPI(title="守护青松 Guard Pine", version=version,
               license_info={"name": "MIT License", "url": "https://mit-license.org/"},
@@ -35,9 +35,9 @@ app = FastAPI(title="守护青松 Guard Pine", version=version,
                   {"name": "card", "description": "首页卡片 **fake info**"}
               ],
               # description=open("./readme.md", encoding="utf-8").read(),
-              description="### “守护青松”国家级大创项目 [部署地址](http://39.108.75.135:9999/)",
+              description="### “守护青松”国家级大创项目 [部署地址](http://101.33.249.241:9999/)",
               docs_url=None, redoc_url=None, default_response_class=ORJSONResponse)
-app.add_middleware(BrotliMiddleware, quality=6, minimum_size=256)
+app.add_middleware(BrotliMiddleware, quality=11, minimum_size=256)
 
 
 @app.middleware("http")
