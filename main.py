@@ -35,7 +35,7 @@ app = FastAPI(title="守护青松 Guard Pine", version=version,
                   {"name": "card", "description": "首页卡片 **fake info**"}
               ],
               # description=open("./readme.md", encoding="utf-8").read(),
-              description="### “守护青松”国家级大创项目 [部署地址](http://101.33.249.241:9999/)",
+              description="### “守护青松”国家级大创项目 [部署地址](https://gp.muspimerol.site/)",
               docs_url=None, redoc_url=None, default_response_class=ORJSONResponse)
 app.add_middleware(BrotliMiddleware, quality=11, minimum_size=256)
 
