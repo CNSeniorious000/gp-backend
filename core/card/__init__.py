@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, Path
 from httpx import AsyncClient
 from random import choice, randrange
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 router = APIRouter(tags=["card"])
 names = open("core/card/names.txt", encoding="utf-8").read().split()
@@ -21,8 +21,9 @@ def get_random_name():
     return choice(names)
 
 
-@router.get("/home/{n}")
-def get_homes(n: int = Field(3, ge=1)):
+@router.get("/home/{n:int}")
+@router.get("/home")
+def get_homes(n: int = Path(ge=1, example=3)):
     return [
         HomeCard(id=i, name=choice(names), location="金凤路18号",
                  view_count=randrange(100, 100_000), search_count=randrange(100, 100_000),
